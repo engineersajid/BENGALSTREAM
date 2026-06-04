@@ -1,0 +1,6 @@
+{
+  "name": "Bengal Stream",
+  "description": "Premium live TV streaming dashboard utilizing hls.js stream decoding engines. Features real-time global news, sports, entertainment channels, and extensive Bengali/Bangladesh IPTV channel selections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
