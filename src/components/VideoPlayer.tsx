@@ -1,22 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize, 
   RotateCcw, Sliders, Info, AlertTriangle, Radio, Activity,
-  Tv, Eye, Settings
+  Tv, Eye, Settings, ChevronDown, ChevronUp
 } from "lucide-react";
 import { Channel, StreamStats } from "../types";
 
 interface VideoPlayerProps {
+  theme: any;
   channel: Channel | null;
   onPrevChannel?: () => void;
   onNextChannel?: () => void;
+  isFloating?: boolean;
 }
 
-export default function VideoPlayer({ channel }: VideoPlayerProps) {
+export default function VideoPlayer({ theme, channel, isFloating = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -38,9 +41,15 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
   // Active playing level resolution height tracker for Auto selector
   const [activeHeight, setActiveHeight] = useState<string>("Detecting...");
 
+  // Active selected actual stream source and mirrors tracker
+  const [activeLoadedUrl, setActiveLoadedUrl] = useState<string>("");
+
   // Quality Select lists
   const [qualityLevels, setQualityLevels] = useState<{ index: number; name: string }[]>([]);
   const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
+
+  // Collapsible setting for Broadcast Hub Connection switcher
+  const [isHubExpanded, setIsHubExpanded] = useState(false);
 
   // Restart a stream when it hangs or encounters a fatal network error
   const handleReload = () => {
@@ -49,13 +58,17 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
     setIsLoading(true);
     setErrorMessage("");
     setErrorCount(0);
-    initializePlayer();
+    // Reload whatever URL is actively playing at the moment
+    initializePlayer(activeLoadedUrl || channel.url);
   };
 
   // Initialize HLS player or native HLS player (for Safari)
-  const initializePlayer = () => {
+  const initializePlayer = (customUrl?: string) => {
     const video = videoRef.current;
     if (!video || !channel) return;
+
+    const urlToLoad = customUrl || channel.url;
+    setActiveLoadedUrl(urlToLoad);
 
     setIsLoading(true);
     setHasError(false);
@@ -74,9 +87,9 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
 
     // Set initial stats
     setStats({
-      url: channel.url,
-      format: channel.url.includes(".m3u8") ? "HLS (HTTP Live Streaming)" : "MPEG-DASH / MP4",
-      protocol: channel.url.startsWith("https") ? "HTTPS Live Secure" : "HTTP Plaintext",
+      url: urlToLoad,
+      format: urlToLoad.includes(".m3u8") ? "HLS (HTTP Live Streaming)" : "MPEG-DASH / MP4",
+      protocol: urlToLoad.startsWith("https") ? "HTTPS Live Secure" : "HTTP Plaintext",
       resolution: "Detecting...",
       fps: 0,
       latency: 0
@@ -123,7 +136,7 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
     };
 
     // If stream is HLS and Hls.js is supported
-    if (channel.url.toLowerCase().includes(".m3u8") && Hls.isSupported()) {
+    if (urlToLoad.toLowerCase().includes(".m3u8") && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         maxBufferLength: 30,
@@ -138,7 +151,7 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
       });
 
       hlsRef.current = hls;
-      hls.loadSource(channel.url);
+      hls.loadSource(urlToLoad);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -237,7 +250,7 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
     } 
     // If browser supports HLS natively (Safari / iOS Chrome / iOS Safari)
     else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = channel.url;
+      video.src = urlToLoad;
       video.addEventListener("loadedmetadata", () => {
         video.play()
           .then(() => {
@@ -259,7 +272,7 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
     } 
     // Fallback: Standard Source Attachment
     else {
-      video.src = channel.url;
+      video.src = urlToLoad;
       video.addEventListener("error", () => {
         setIsLoading(false);
         setHasError(true);
@@ -303,26 +316,117 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
     }
   };
 
+  // Handle tap / double click to toggle play vs fullscreen
+  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
+    e.preventDefault();
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+      // Double tap -> Fullscreen
+      toggleFullscreen();
+    } else {
+      // Single tap -> Play / Pause
+      clickTimeoutRef.current = setTimeout(() => {
+        togglePlay();
+        clickTimeoutRef.current = null;
+      }, 250);
+    }
+  };
+
   // Toggle Mute
   const toggleMute = () => {
     setIsMuted(!isMuted);
   };
 
-  // Handle Fullscreen Toggle
+  // Handle Fullscreen Toggle with Mobile / iOS Webkit Fallbacks
   const toggleFullscreen = () => {
     const container = containerRef.current;
+    const video = videoRef.current;
     if (!container) return;
 
     if (!document.fullscreenElement) {
-      container.requestFullscreen()
-        .then(() => setIsFullscreen(true))
-        .catch(err => console.error(err));
+      // standard API
+      if (container.requestFullscreen) {
+        container.requestFullscreen()
+          .then(() => setIsFullscreen(true))
+          .catch(() => {
+            // iOS Webkit video fullscreen fallback
+            if (video && (video as any).webkitEnterFullscreen) {
+              try {
+                (video as any).webkitEnterFullscreen();
+                setIsFullscreen(true);
+              } catch (e) {
+                console.error("Webkit fallback failed", e);
+              }
+            }
+          });
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        try {
+          (video as any).webkitEnterFullscreen();
+          setIsFullscreen(true);
+        } catch (e) {
+          console.error("Direct Webkit failed", e);
+        }
+      }
     } else {
-      document.exitFullscreen()
-        .then(() => setIsFullscreen(false))
-        .catch(err => console.error(err));
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+          .then(() => setIsFullscreen(false))
+          .catch(err => console.error(err));
+      }
     }
   };
+
+  // Sync fullscreen state standard listeners
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Listen to orientation changes and screen dimensions to automatically launch horizontal full screen on mobile devices
+  useEffect(() => {
+    const handleOrientationOrResize = () => {
+      // check if we are horizontal
+      const isLandscape = window.innerWidth > window.innerHeight;
+      // standard mobile cutoff
+      const isMobile = window.innerWidth < 768 && window.innerHeight < 768;
+
+      if (isMobile && isLandscape && videoRef.current && isPlaying) {
+        const video = videoRef.current as any;
+        try {
+          if (video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen();
+          } else if (video.requestFullscreen) {
+            video.requestFullscreen();
+          } else if (containerRef.current && containerRef.current.requestFullscreen) {
+            containerRef.current.requestFullscreen();
+          }
+        } catch (e) {
+          console.warn("Auto horizontal rotation fullscreen failed:", e);
+        }
+      }
+    };
+
+    window.addEventListener("resize", handleOrientationOrResize);
+    window.addEventListener("orientationchange", handleOrientationOrResize);
+
+    return () => {
+      window.removeEventListener("resize", handleOrientationOrResize);
+      window.removeEventListener("orientationchange", handleOrientationOrResize);
+    };
+  }, [isPlaying]);
 
   // Handle Quality Override Options
   const handleQualityChange = (index: number) => {
@@ -363,8 +467,37 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
     };
   }, [isPlaying, showStats]);
+
+  // Generate active stream servers and backup pipeline gateways
+  const streamSources = (() => {
+    if (!channel) return [];
+    
+    const list = [
+      { name: "Primary Broadcast Feed", url: channel.url, type: "direct" }
+    ];
+
+    if (channel.alternateUrls && channel.alternateUrls.length > 0) {
+      channel.alternateUrls.forEach((url, i) => {
+        if (url !== channel.url) {
+          list.push({ name: `Backup Tunnel Mirror ${i + 1}`, url, type: "backup" });
+        }
+      });
+    }
+
+    // Always offer a CORS Proxy Fallback
+    list.push({
+      name: "CORS Secure Bypass Relay",
+      url: `https://corsproxy.io/?${encodeURIComponent(channel.url)}`,
+      type: "proxy"
+    });
+
+    return list;
+  })();
 
   return (
     <div className="flex flex-col gap-4 font-sans">
@@ -374,15 +507,52 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
         ref={containerRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => isPlaying && !showStats && setShowControls(false)}
-        className="relative aspect-video w-full rounded-2xl bg-black overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/5 group"
+        className="sticky top-0 lg:relative lg:top-auto z-30 aspect-video w-full sm:rounded-2xl bg-black overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] sm:border border-white/5 group"
       >
         {/* Core HTML5 Video Element */}
         <video 
           ref={videoRef}
           className="w-full h-full object-contain"
           playsInline
-          onClick={togglePlay}
+          onClick={handleVideoClick}
         />
+
+        {/* Beautiful Poster / Photo backplate when not playing */}
+        {!isPlaying && channel && !isLoading && !hasError && (
+          <div 
+            onClick={togglePlay}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0a0a0a] bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.12),transparent_70%)] cursor-pointer select-none"
+          >
+            <div className="relative group/logo">
+              <div className="absolute -inset-2 bg-gradient-to-tr from-red-550/20 to-red-650/20 rounded-3xl blur-md opacity-50 group-hover/logo:opacity-100 transition-opacity duration-500"></div>
+              <img 
+                src={channel.logo}
+                alt={channel.name}
+                onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(channel.name)}`; }}
+                className="relative w-20 h-20 sm:w-24 sm:h-24 object-contain p-3.5 rounded-2xl bg-black/70 border border-white/10 backdrop-blur-md shadow-2xl transition-transform duration-500 group-hover/logo:scale-105"
+              />
+            </div>
+            <div className="mt-4 text-center px-4">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-100 font-display uppercase tracking-widest">{channel.name}</h3>
+              <p className="text-[9px] text-slate-500 font-mono tracking-widest uppercase mt-1 w-full animate-pulse">Ready to Stream • Click to Play</p>
+            </div>
+          </div>
+        )}
+
+        {/* Persistent Fullscreen / Expand overlay in PiP / Floating mode */}
+        {isFloating && channel && (
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFullscreen();
+            }}
+            className="absolute top-2.5 right-2.5 z-30 p-2 rounded-full bg-black/80 hover:bg-black text-white hover:text-red-500 transition-all cursor-pointer border border-white/10 hover:border-white/20 shadow-lg active:scale-95 pointer-events-auto"
+            title="Go Fullscreen"
+          >
+            <Maximize className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Loading / Spinner overlay */}
         {isLoading && (
@@ -628,13 +798,85 @@ export default function VideoPlayer({ channel }: VideoPlayerProps) {
         )}
       </div>
 
-      {/* Helpful Warning Banner below Player */}
-      {channel && (
-        <div className="bg-[#0f0f0f] border border-white/5 p-3 sm:p-4 rounded-xl flex items-start gap-3 shadow-md">
-          <Info className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-          <div className="text-xs text-slate-300 leading-relaxed font-sans">
-            <span className="font-bold text-white">Stream Notice:</span> Public IPTV stream links can occasionally experience server stress or geographical broadcasting blockades. If the buffering hangs or fails, use the <span className="font-bold text-red-400 flex inline-items items-center gap-0.5 inline hover:underline cursor-pointer" onClick={handleReload}><RotateCcw className="h-3 w-3 inline" /> Reconnect</span> toolbar utility or try selecting another channel from the grid list.
-          </div>
+      {/* Broadcast Pipeline Switcher & Connection Establishment Node */}
+      {!isFloating && channel && streamSources.length > 0 && (
+        <div className="bg-[#0b0b0b]/90 border border-white/5 rounded-xl p-3.5 flex flex-col gap-3 shadow-md">
+          {/* Header click area */}
+          <button 
+            type="button"
+            onClick={() => setIsHubExpanded(!isHubExpanded)}
+            className="flex items-center justify-between gap-3 text-left w-full cursor-pointer group outline-none"
+          >
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <div>
+                <h4 className={`text-xs font-bold text-slate-100 uppercase tracking-widest font-mono flex items-center gap-1.5 group-hover:${theme.accentText} transition-colors`}>
+                  <Radio className="h-3.5 w-3.5 text-emerald-500 animate-pulse" /> 
+                  Broadcast Connection Settings
+                </h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {isHubExpanded ? "Tap to collapse settings" : "Switch server mirror feed or bypass ISP blocks"}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="hidden sm:inline-block text-[9px] font-bold font-mono px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-500/20">
+                {activeLoadedUrl.includes("corsproxy.io") ? "PROXY ACTIVE" : "DIRECT CONNECTED"}
+              </span>
+              <div className="p-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 group-hover:text-white transition-all">
+                {isHubExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </div>
+          </button>
+
+          {/* Cool Compact 3-Column Node Row & Information */}
+          {isHubExpanded && (
+            <div className="flex flex-col gap-3.5 border-t border-white/5 pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {streamSources.map((source, index) => {
+                  const isSelected = activeLoadedUrl === source.url;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) return;
+                        initializePlayer(source.url);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all active:scale-[0.98] cursor-pointer ${
+                        isSelected
+                          ? `${theme.accentLightBg} ${theme.accentBorder} text-white shadow-[0_0_15px_rgba(239,68,68,0.05)]`
+                          : "bg-[#121212]/50 border-white/5 text-slate-450 hover:text-white hover:bg-[#161616]"
+                      }`}
+                    >
+                      <span className={`text-[10px] sm:text-xs font-bold font-mono tracking-wider ${isSelected ? "text-red-400" : ""}`}>
+                        {source.type === "direct" && "📡 NODE 01"}
+                        {source.type === "backup" && `⛓️ NODE 0${index + 1}`}
+                        {source.type === "proxy" && "🛡️ BYPASS"}
+                      </span>
+                      <span className="text-[8px] sm:text-[10px] text-slate-500 truncate w-full mt-0.5 uppercase tracking-wide">
+                        {source.type === "direct" && "Primary"}
+                        {source.type === "backup" && "Mirror Feed"}
+                        {source.type === "proxy" && "CORS Proxy"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Helpful Warning Banner Nesting */}
+              <div className="bg-[#0f0f0f] border border-white/5 p-3 rounded-xl flex items-start gap-2.5 shadow-inner">
+                <Info className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                <div className="text-[10px] sm:text-[11px] text-slate-300 leading-relaxed font-sans">
+                  <span className="font-bold text-white">Stream Notice:</span> Public stream relays occasionally experience ISP blocks or geographical restrictions. If buffering hangs: use <span className="font-bold text-red-400 inline-flex items-center gap-0.5 hover:underline cursor-pointer" onClick={handleReload}><RotateCcw className="h-3 w-3 inline" /> Reconnect</span> toolbar or switch alternative server nodes above.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

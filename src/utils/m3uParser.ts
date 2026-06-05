@@ -98,13 +98,13 @@ export function parseM3UText(text: string, defaultCountry: string = "all"): Chan
         } else if (groupNormalized.includes("movi") || groupNormalized.includes("film") || groupNormalized.includes("cinem")) {
           category = "movies";
         } else if (groupNormalized.includes("kid") || groupNormalized.includes("toon") || groupNormalized.includes("anim")) {
-          category = "kids";
+          category = "cartoons";
         } else if (groupNormalized.includes("document") || groupNormalized.includes("edu") || groupNormalized.includes("sci")) {
           category = "documentary";
         } else if (groupNormalized.includes("relig") || groupNormalized.includes("mosq") || groupNormalized.includes("church") || groupNormalized.includes("islam")) {
           category = "religious";
-        } else if (groupNormalized.includes("entert") || groupNormalized.includes("drama") || groupNormalized.includes("show")) {
-          category = "entertainment";
+        } else if (groupNormalized.includes("entert") || groupNormalized.includes("drama") || groupNormalized.includes("show") || groupNormalized.includes("series")) {
+          category = "drama";
         }
 
         const country = defaultCountry !== "all" 

@@ -7,6 +7,9 @@ import { Country, Category } from "../types";
 import { POPULAR_CATEGORIES, CHOSEN_COUNTRIES } from "../data/staticChannels";
 
 interface SidebarProps {
+  theme: any;
+  onChangeTheme: (id: string) => void;
+  themesList: any[];
   selectedCategory: string;
   onSelectCategory: (id: string) => void;
   selectedCountry: string;
@@ -18,6 +21,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
+  theme,
+  onChangeTheme,
+  themesList,
   selectedCategory,
   onSelectCategory,
   selectedCountry,
@@ -35,23 +41,27 @@ export default function Sidebar({
   );
 
   return (
-    <aside className="w-full lg:w-72 bg-[#0f0f0f] border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col h-full overflow-y-auto custom-scrollbar">
+    <aside className={`w-full lg:w-72 ${theme.bgSidebar} border-b lg:border-b-0 lg:border-r ${theme.borderClass} ${theme.textPrimary} flex flex-col h-full overflow-y-auto custom-scrollbar`}>
       
       {/* Brand Header */}
-      <div className="p-6 border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20">
+      <div className={`p-6 border-b ${theme.borderClass} flex items-center justify-between`}>
+        <div 
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-3 cursor-pointer hover:opacity-85 select-none active:scale-[0.98] transition-all"
+          title="Reload Home"
+        >
+          <div className={`h-9 w-9 ${theme.accentBg} rounded-xl flex items-center justify-center shadow-lg shadow-black/20`}>
             <Tv className="h-5 w-5 text-white" />
           </div>
           <div>
             <span className="font-display font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1">
-              BENGAL <span className="text-red-500">STREAM</span>
+              BENGAL <span className={theme.accentText}>STREAM</span>
             </span>
             <p className="text-[10px] text-slate-500 font-mono tracking-wider font-semibold">GLOBAL LIVE TV</p>
           </div>
         </div>
-        <span className="bg-red-500/10 text-red-400 border border-red-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 uppercase">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> Ultra Fast
+        <span className={`${theme.accentLightBg} ${theme.accentText} border ${theme.accentBorder} text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 uppercase`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${theme.accentBg} animate-pulse`}></span> Ultra Fast
         </span>
       </div>
 
@@ -61,7 +71,7 @@ export default function Sidebar({
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-extrabold text-slate-500 tracking-wider font-mono uppercase flex items-center gap-1.5">
-              <Flame className="h-3 w-3 text-red-500 animate-pulse" /> Bengali Hub
+              <Flame className={`h-3 w-3 ${theme.accentText} animate-pulse`} /> Bengali Hub
             </span>
           </div>
           <button
@@ -72,7 +82,7 @@ export default function Sidebar({
             }}
             className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
               selectedCountry === "bd" && !showFavoritesOnly
-                ? "bg-gradient-to-r from-red-950/20 via-[#161616] to-[#0c0c0c] border-red-500/35 shadow-md shadow-red-950/10 text-white"
+                ? "bg-white/5 border-white/20 text-white"
                 : "bg-white/5 border-white/5 hover:border-white/10 text-slate-300 hover:text-white"
             }`}
           >
@@ -80,13 +90,42 @@ export default function Sidebar({
               <span className="text-2xl" role="img" aria-label="Bangladesh flag">🇧🇩</span>
               <div>
                 <p className="text-xs font-bold font-display">Bangladesh Channels</p>
-                <p className="text-[10px] text-red-400/85 font-mono font-medium mt-0.5">High Speed Live Feeds</p>
+                <p className={`text-[10px] ${theme.accentText} font-mono font-medium mt-0.5`}>High Speed Live Feeds</p>
               </div>
             </div>
             <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${
-              selectedCountry === "bd" ? "translate-x-1 text-red-400" : "text-slate-500"
+              selectedCountry === "bd" ? `translate-x-1 ${theme.accentText}` : "text-slate-500"
             }`} />
           </button>
+        </div>
+
+        {/* COLOR THEME CONTROLLER CHAMBER */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-extrabold text-slate-500 tracking-wider font-mono uppercase flex items-center gap-1.5">
+              🎨 Page Aesthetic Themes
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {themesList.map((t) => {
+              const isSelected = theme.id === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => onChangeTheme(t.id)}
+                  className={`p-1.5 rounded-lg text-left text-[10px] font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
+                    isSelected
+                      ? "bg-white/15 border-white/30 text-white font-extrabold"
+                      : "bg-[#141414] border-white/5 text-slate-400 hover:text-slate-200"
+                  }`}
+                  title={t.name}
+                >
+                  <span className="text-sm select-none">{t.emoji}</span>
+                  <span className="truncate">{t.name.split(" ")[0]}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* FAVORITES VIEW TOGGLE */}
@@ -95,12 +134,12 @@ export default function Sidebar({
             onClick={() => onToggleFavoritesOnly(!showFavoritesOnly)}
             className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
               showFavoritesOnly
-                ? "bg-red-950/20 border-red-500/30 text-red-200"
+                ? `${theme.accentLightBg} ${theme.accentBorder} ${theme.accentText}`
                 : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="p-1.5 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+              <span className={`p-1.5 rounded-lg ${theme.accentLightBg} ${theme.accentText} flex items-center justify-center`}>
                 <Heart className={`h-4 w-4 ${showFavoritesOnly ? "fill-red-500" : ""}`} />
               </span>
               <div>
@@ -109,7 +148,7 @@ export default function Sidebar({
               </div>
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              showFavoritesOnly ? "bg-red-600 text-white" : "bg-[#222] text-slate-400"
+              showFavoritesOnly ? `${theme.accentBg} text-white` : "bg-[#222] text-slate-400"
             }`}>
               {favoritesCount}
             </span>
@@ -141,7 +180,7 @@ export default function Sidebar({
                     <span className="text-base select-none" role="img">{cat.emoji}</span>
                     <span>{cat.name}</span>
                   </div>
-                  {isSelected && <Check className="h-3.5 w-3.5 text-red-500" />}
+                  {isSelected && <Check className={`h-3.5 w-3.5 ${theme.accentText}`} />}
                 </button>
               );
             })}
@@ -149,7 +188,7 @@ export default function Sidebar({
         </div>
 
         {/* CHANNELS BY COUNTRY LIST */}
-        <div className="space-y-2 pt-1 border-t border-white/5">
+        <div className={`space-y-2 pt-1 border-t ${theme.borderClass}`}>
           <div className="flex items-center justify-between px-1.5 mb-2">
             <span className="text-[10px] font-extrabold text-slate-500 tracking-wider font-mono uppercase flex items-center gap-1.5">
               <Globe2 className="h-3 w-3 text-slate-400" /> Global Countries
@@ -164,12 +203,12 @@ export default function Sidebar({
               placeholder="Search Countries..."
               value={countrySearch}
               onChange={(e) => setCountrySearch(e.target.value)}
-              className="w-full bg-[#161616] text-[#f1f1f1] placeholder-slate-500 text-xs px-8 py-2 rounded-lg border border-white/5 focus:outline-none focus:border-red-600 transition-colors"
+              className="w-full bg-[#161616] text-[#f1f1f1] placeholder-slate-500 text-xs px-8 py-2 rounded-lg border border-white/5 focus:outline-none focus:border-red-655 transition-colors"
             />
           </div>
 
           {/* Interactive flag tiles */}
-          <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+          <div className="grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto custom-scrollbar pr-1">
             {filteredCountries.map((country) => {
               const isSelected = selectedCountry === country.code && !showFavoritesOnly;
               const isLoading = activeLoadingCountry === country.code;
@@ -182,7 +221,7 @@ export default function Sidebar({
                   }}
                   className={`p-2 rounded-lg border text-left flex flex-col gap-1 transition-all active:scale-95 cursor-pointer relative overflow-hidden ${
                     isSelected
-                      ? "bg-[#181818] border-red-500/45 text-white"
+                      ? "bg-white/10 border-white/20 text-white"
                       : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"
                   }`}
                 >
@@ -194,7 +233,7 @@ export default function Sidebar({
                       <RefreshCw className="h-3 w-3 text-red-500 animate-spin" />
                     )}
                     {isSelected && !isLoading && (
-                      <Check className="h-3 w-3 text-red-500" />
+                      <Check className={`h-3 w-3 ${theme.accentText}`} />
                     )}
                   </div>
                   <span className="text-[10px] font-bold font-display truncate">
@@ -207,12 +246,12 @@ export default function Sidebar({
         </div>
 
         {/* Current server status box inline with Design HTML */}
-        <div className="mt-8 pt-4 border-t border-white/5">
-          <div className="bg-gradient-to-br from-red-600/10 to-transparent border border-red-600/20 rounded-xl p-4">
-            <p className="text-[10px] text-slate-400 mb-1.5 font-semibold uppercase tracking-wider font-mono">Current Server Load</p>
-            <p className="text-base font-extrabold font-display text-white">4,281 Live Channels</p>
-            <p className="text-[9px] text-red-500 font-mono font-bold mt-1 uppercase tracking-wider flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> All Servers Online
+        <div className={`mt-4 pt-4 border-t ${theme.borderClass}`}>
+          <div className={`bg-gradient-to-br ${theme.gradientFrom} to-transparent border ${theme.accentBorder} rounded-xl p-4`}>
+            <p className="text-[10px] text-slate-455 mb-1.5 font-semibold uppercase tracking-wider font-mono">Current Server Load</p>
+            <p className="text-sm font-extrabold font-display text-white">4,281 Live Channels</p>
+            <p className={`text-[9px] ${theme.accentText} font-mono font-bold mt-1 uppercase tracking-wider flex items-center gap-1`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${theme.accentBg} animate-pulse`}></span> All Systems Nominal
             </p>
           </div>
         </div>
@@ -221,3 +260,4 @@ export default function Sidebar({
     </aside>
   );
 }
+

@@ -2,6 +2,7 @@ import { Play, Flame, Heart, Compass, AlertCircle, Info, Radio, Star } from "luc
 import { Channel } from "../types";
 
 interface FeaturedHeroProps {
+  theme: any;
   channel: Channel | null;
   onPlayChannel: (channel: Channel) => void;
   favorites: string[];
@@ -10,6 +11,7 @@ interface FeaturedHeroProps {
 }
 
 export default function FeaturedHero({
+  theme,
   channel,
   onPlayChannel,
   favorites,
@@ -19,14 +21,14 @@ export default function FeaturedHero({
   const isFav = channel ? favorites.includes(channel.id) : false;
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-[#0f0f0f] border border-white/5 shadow-2xl">
+    <div className={`relative rounded-2xl overflow-hidden ${theme.bgCard} border ${theme.borderClass} shadow-2xl`}>
       
       {/* Background Ambience & Grid Gradient */}
-      <div className="absolute inset-0 z-0 bg-radial-gradient from-red-950/15 via-[#0c0c0c] to-[#080808] opacity-90"></div>
+      <div className={`absolute inset-0 z-0 bg-gradient-to-br ${theme.gradientFrom} to-transparent opacity-50`}></div>
       
       {/* Animated absolute decor */}
-      <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-red-650/5 blur-3xl animate-pulse"></div>
-      <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-red-800/5 blur-3xl animate-pulse"></div>
+      <div className={`absolute -top-24 -left-24 h-96 w-96 rounded-full ${theme.accentLightBg} blur-3xl animate-pulse`}></div>
+      <div className={`absolute -bottom-24 -right-24 h-96 w-96 rounded-full ${theme.accentLightBg} blur-3xl animate-pulse`}></div>
 
       {channel ? (
         /* CURRENT BROADCAST DETAILS HERO */
@@ -35,7 +37,7 @@ export default function FeaturedHero({
             
             {/* Pulsing featured avatar logo */}
             <div className="relative group shrink-0">
-              <div className="absolute -inset-1.5 bg-gradient-to-tr from-red-650 to-red-800 rounded-2xl blur opacity-30 mt-0.5 animate-pulse"></div>
+              <div className={`absolute -inset-1.5 bg-gradient-to-tr ${theme.accentBg === "bg-[#111]" ? "from-slate-650" : theme.accentBg} rounded-2xl blur opacity-30 mt-0.5 animate-pulse`}></div>
               <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#080808] border border-white/5 p-3 shadow-2xl flex items-center justify-center">
                 <img 
                   src={channel.logo} 
@@ -44,14 +46,14 @@ export default function FeaturedHero({
                   className="max-h-full max-w-full object-contain"
                 />
               </div>
-              <span className="absolute -bottom-1.5 right-1.5 bg-red-600 text-[10px] text-white font-black px-2 py-0.5 rounded-sm border border-red-500 font-display flex items-center gap-1 shadow-md shadow-red-600/50">
+              <span className={`absolute -bottom-1.5 right-1.5 ${theme.accentBg} text-[10px] text-white font-black px-2 py-0.5 rounded-sm border ${theme.accentBorder} font-display flex items-center gap-1 shadow-md`}>
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping"></span> 1080P
               </span>
             </div>
 
             <div>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
-                <span className="bg-red-600/10 text-red-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-red-500/20 uppercase tracking-widest font-mono">
+                <span className={`${theme.accentLightBg} ${theme.accentText} text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${theme.accentBorder} uppercase tracking-widest font-mono`}>
                   Currently Airing
                 </span>
                 <span className="bg-white/5 text-white border border-white/10 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest font-mono">
@@ -61,21 +63,21 @@ export default function FeaturedHero({
               <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white font-display tracking-tight leading-tight">
                 {channel.name}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl leading-relaxed font-sans">
+              <p className="text-sm text-slate-400 mt-2 max-w-xl leading-relaxed font-sans">
                 Stream this channel live now. Operating over public IPTV node {channel.id}. 
                 {channel.language && ` Optimized audio and video track tailored for ${channel.language} receivers.`}
               </p>
               
               <div className="flex flex-wrap gap-2.5 items-center justify-center md:justify-start mt-4 text-xs font-sans">
-                <span className="bg-[#121212] text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
-                  Category: <strong className="text-red-500 capitalize">{channel.category}</strong>
+                <span className="bg-black/30 text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
+                  Category: <strong className={`${theme.accentText} capitalize`}>{channel.category}</strong>
                 </span>
-                <span className="bg-[#121212] text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
+                <span className="bg-black/30 text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
                   Country: <strong className="text-white uppercase">{channel.country}</strong>
                 </span>
                 {channel.language && (
-                  <span className="bg-[#121212] text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
-                    Language: <strong className="text-red-400">{channel.language}</strong>
+                  <span className="bg-black/30 text-slate-300 px-3 py-1.5 rounded-lg border border-white/5">
+                    Language: <strong className="text-white opacity-85">{channel.language}</strong>
                   </span>
                 )}
               </div>
@@ -88,15 +90,15 @@ export default function FeaturedHero({
               onClick={() => onToggleFavorite(channel.id)}
               className={`px-5 py-3 rounded-xl font-bold font-display text-xs flex items-center justify-center gap-2 border transition-all active:scale-95 cursor-pointer ${
                 isFav 
-                  ? "bg-red-950/20 border-red-500/30 text-red-300 hover:bg-red-950/40"
-                  : "bg-[#121212] hover:border-white/10 border-white/5 text-slate-300 hover:text-white"
+                  ? `${theme.accentLightBg} ${theme.accentBorder} ${theme.accentText} hover:bg-black/40`
+                  : "bg-black/30 hover:border-white/10 border-white/5 text-slate-300 hover:text-white"
               }`}
             >
               <Heart className={`h-4 w-4 ${isFav ? "fill-red-500 text-red-500" : ""}`} /> {isFav ? "Favorited" : "Save Channel"}
             </button>
             <button
               onClick={() => onPlayChannel(channel)}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold font-display text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-900/10 transition-all cursor-pointer active:scale-95"
+              className={`px-6 py-3 ${theme.accentBg} ${theme.accentHover} text-white font-bold font-display text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95`}
             >
               <Radio className="h-4 w-4 animate-pulse" /> Re-tune Broadcaster
             </button>

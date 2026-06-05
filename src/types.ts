@@ -9,6 +9,7 @@ export interface Channel {
   language?: string;   // Language name or code (e.g. Bengali)
   isFeatured?: boolean;// Highlighted as popular
   isFavorite?: boolean;// Locally favorited channel
+  alternateUrls?: string[]; // Backup alternate stream sources for connection establishment
 }
 
 export interface Country {
