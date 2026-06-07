@@ -51,6 +51,89 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
   // Collapsible setting for Broadcast Hub Connection switcher
   const [isHubExpanded, setIsHubExpanded] = useState(false);
 
+  // DVR Timeshift/Seeker State variables
+  const [seekableStart, setSeekableStart] = useState<number>(0);
+  const [seekableEnd, setSeekableEnd] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [isDvrSeeking, setIsDvrSeeking] = useState<boolean>(false);
+  const [dvrOffset, setDvrOffset] = useState<number>(0); // Seconds behind the live edge
+  const [hasDvrHistory, setHasDvrHistory] = useState<boolean>(false);
+
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    setCurrentTime(video.currentTime);
+
+    if (video.seekable && video.seekable.length > 0) {
+      try {
+        const start = video.seekable.start(0);
+        const end = video.seekable.end(video.seekable.length - 1);
+        
+        if (typeof start === "number" && typeof end === "number" && !isNaN(start) && !isNaN(end)) {
+          setSeekableStart(start);
+          setSeekableEnd(end);
+          
+          if (end - start > 15) {
+            setHasDvrHistory(true);
+            if (!isDvrSeeking) {
+              const currentOffset = Math.max(0, end - video.currentTime);
+              setDvrOffset(currentOffset);
+            }
+          } else {
+            setHasDvrHistory(false);
+          }
+        }
+      } catch (e) {
+        // Suppress expected exceptions during stream loading
+      }
+    }
+  };
+
+  const handleDvrScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = videoRef.current;
+    const value = parseFloat(e.target.value);
+    
+    setIsDvrSeeking(true);
+    setDvrOffset(value);
+
+    if (hasDvrHistory && video && seekableEnd > 0) {
+      const targetTime = Math.max(seekableStart, seekableEnd - value);
+      video.currentTime = targetTime;
+    }
+  };
+
+  const handleDvrScrubEnd = () => {
+    setIsDvrSeeking(false);
+  };
+
+  const handleJumpToLive = () => {
+    const video = videoRef.current;
+    setDvrOffset(0);
+    if (video) {
+      if (hasDvrHistory && seekableEnd > 0) {
+        video.currentTime = seekableEnd;
+      } else {
+        handleReload();
+      }
+    }
+  };
+
+  const formatOffsetTime = (seconds: number) => {
+    if (seconds <= 2) return "LIVE";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+      return `-${hrs}h ${mins}m ${secs}s`;
+    }
+    if (mins > 0) {
+      return `-${mins}m ${secs}s`;
+    }
+    return `-${secs}s`;
+  };
+
   // Restart a stream when it hangs or encounters a fatal network error
   const handleReload = () => {
     if (!channel) return;
@@ -515,6 +598,7 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
           className="w-full h-full object-contain"
           playsInline
           onClick={handleVideoClick}
+          onTimeUpdate={handleTimeUpdate}
         />
 
         {/* Beautiful Poster / Photo backplate when not playing */}
@@ -714,6 +798,34 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
             {/* Bottom Controls HUD Strip */}
             <div className="w-full p-4 sm:p-6 flex flex-col gap-3 pointer-events-auto">
               
+              {/* YouTube-style Red Progress Seeker Bar */}
+              <div className="flex items-center gap-3 w-full select-none mb-1">
+                {/* Time Indicator displaying Offset */}
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-100 min-w-[65px] text-center bg-[#121212]/95 border border-white/5 py-1 px-2 rounded-lg">
+                  {formatOffsetTime(dvrOffset)}
+                </span>
+                
+                {/* Main Progress Seeker slider */}
+                <div className="flex-1 relative group flex items-center">
+                  <input 
+                    type="range"
+                    min="0"
+                    max={hasDvrHistory ? Math.max(30, seekableEnd - seekableStart) : 14400}
+                    step="1"
+                    value={dvrOffset}
+                    onChange={handleDvrScrubChange}
+                    onMouseUp={handleDvrScrubEnd}
+                    onTouchEnd={handleDvrScrubEnd}
+                    className="w-full h-1 bg-white/20 group-hover:h-2 rounded-lg appearance-none cursor-pointer accent-red-650 transition-all outline-none"
+                    title="Drag to seek back (Up to 4 Hours of stream history)"
+                  />
+                </div>
+
+                <span className="text-[9px] text-slate-500 font-mono tracking-widest uppercase hidden md:inline select-none">
+                  {hasDvrHistory ? "🔴 DVR History Available" : "🕒 DVR Timeshift Buffer"}
+                </span>
+              </div>
+
               {/* Media Controller Row */}
               <div className="flex items-center justify-between">
                 
@@ -745,7 +857,7 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
                         setVolume(parseFloat(e.target.value));
                         setIsMuted(false);
                       }}
-                      className="w-16 md:w-24 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                      className="w-16 md:w-24 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-650"
                     />
                   </div>
                 </div>
@@ -777,9 +889,19 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
                     </select>
                   </div>
 
-                  <span className="hidden sm:flex text-xs text-white/80 font-mono bg-[#121212]/90 backdrop-blur px-2.5 py-1.5 rounded-lg border border-white/5 items-center gap-1.5">
-                    <Eye className="h-3.5 w-3.5 text-red-500 animate-pulse" /> LIVE STREAM
-                  </span>
+                  {/* YouTube Live-Style Interactive Goal Indicator dot */}
+                  <button
+                    onClick={handleJumpToLive}
+                    className={`text-xs font-mono px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all duration-300 active:scale-95 cursor-pointer outline-none ${
+                      dvrOffset <= 2
+                        ? "bg-red-650/15 text-red-500 border-red-500/20 active:scale-100"
+                        : "bg-[#121212]/95 text-slate-400 border-white/5 hover:text-white hover:border-white/10"
+                    }`}
+                    title={dvrOffset <= 2 ? "You are at the Live broadcast edge" : "Jump back to Live Edge"}
+                  >
+                    <span className={`h-2 w-2 rounded-full ${dvrOffset <= 2 ? "bg-red-500 animate-pulse" : "bg-slate-500"}`}></span>
+                    {dvrOffset <= 2 ? "LIVE" : "GO LIVE"}
+                  </button>
                   
                   {/* Fullscreen Button */}
                   <button 

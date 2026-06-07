@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { 
   Search, Heart, Play, RefreshCw, Radio, Layers, EyeOff,
-  ChevronDown, ArrowUpRight, HelpCircle, Grid, List
+  ChevronDown, ArrowUpRight, HelpCircle, Grid, List, Sliders
 } from "lucide-react";
 import { Channel } from "../types";
 import { getCountryFlag } from "../data/staticChannels";
@@ -15,6 +15,7 @@ interface ChannelGridProps {
   onToggleFavorite: (id: string) => void;
   isLoading: boolean;
   onResetToStatic: () => void;
+  onOpenEditor: () => void;
 }
 
 export default function ChannelGrid({
@@ -25,7 +26,8 @@ export default function ChannelGrid({
   favorites,
   onToggleFavorite,
   isLoading,
-  onResetToStatic
+  onResetToStatic,
+  onOpenEditor
 }: ChannelGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(24);
@@ -153,6 +155,16 @@ export default function ChannelGrid({
               <span className="text-[11px] font-mono tracking-wider font-bold uppercase pl-0.5 pr-1 hidden sm:inline">Compact List</span>
             </button>
           </div>
+
+          {/* DYNAMIC CHANNEL EDITOR ACCESS POINT */}
+          <button
+            onClick={onOpenEditor}
+            className="p-2 bg-[#0c0c0c]/98 border border-white/5 hover:border-white/15 text-slate-300 hover:text-white rounded-xl flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer font-bold shadow-md shrink-0"
+            title="Manage & Edit Custom Streams"
+          >
+            <Sliders className="h-4 w-4 text-red-500 animate-pulse" />
+            <span className="text-[11px] font-mono tracking-wider uppercase pl-0.5 pr-1">Channel Editor</span>
+          </button>
 
           <div className="flex items-center gap-2.5 text-xs font-mono text-slate-400 font-medium">
             {isLoading && (

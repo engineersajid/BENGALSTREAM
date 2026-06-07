@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Modern Vibrant Bengal Stream Gradient: Glowing Reds to Rich Bengal Green -->
+    <linearGradient id="bengalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b30" />
+      <stop offset="55%" stop-color="#e60026" />
+      <stop offset="100%" stop-color="#006a4e" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- High-End App Icon Frame Background -->
+  <rect width="512" height="512" rx="140" fill="#080808" />
+  <rect x="12" y="12" width="488" height="488" rx="128" stroke="url(#bengalGrad)" stroke-width="8" opacity="0.9" />
+  
+  <!-- Outer Stream Ring -->
+  <circle cx="256" cy="256" r="190" stroke="url(#bengalGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="1000" stroke-dashoffset="80" opacity="0.6" />
+  
+  <!-- Outer Dotted Telemetry Pulse Ring -->
+  <circle cx="256" cy="256" r="225" stroke="#ff3b30" stroke-width="3" stroke-dasharray="12 24" opacity="0.25" />
+
+  <!-- Inner Glowing Shield Circle -->
+  <circle cx="256" cy="256" r="115" fill="url(#bengalGrad)" filter="url(#glow)" />
+  
+  <!-- Stylized Play/Cinema Triangle Symbol -->
+  <path d="M215 175 C215 168.5 222.5 164.5 228.5 168.5 L335.5 243.5 C341.5 247.5 341.5 256.5 335.5 260.5 L228.5 335.5 C222.5 339.5 215 335.5 215 329 L215 175 Z" fill="#ffffff" filter="drop-shadow(0px 8px 16px rgba(0,0,0,0.35))" />
+</svg>

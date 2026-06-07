@@ -84,6 +84,22 @@ export const STATIC_CHANNELS: Channel[] = [
     ]
   },
   {
+    id: "gaan-bangla",
+    name: "Gaan Bangla (GB Music)",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/e/ee/Gaan_Bangla_Logo.png",
+    url: "https://live.arabiantv.org/gaanbangla.m3u8",
+    category: "music",
+    country: "bd",
+    countryName: "Bangladesh",
+    language: "Bengali",
+    isFeatured: true,
+    alternateUrls: [
+      "https://live.arabiantv.org/gaanbangla.m3u8",
+      "https://t-live-cdn.toffee.live/toffeelive/gaan_bangla.m3u8",
+      "http://103.91.144.116:8080/gaanbangla/live.m3u8"
+    ]
+  },
+  {
     id: "dd-news",
     name: "DD News India",
     logo: "https://upload.wikimedia.org/wikipedia/commons/2/20/DD_News.svg",

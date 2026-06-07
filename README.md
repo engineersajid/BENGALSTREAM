@@ -1,3 +1,1 @@
-BENGAL STREAM
-GLOBAL LIVE TV
-
+Bangal stream a live TV channel broadcasting websites

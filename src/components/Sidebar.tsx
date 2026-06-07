@@ -18,6 +18,8 @@ interface SidebarProps {
   showFavoritesOnly: boolean;
   onToggleFavoritesOnly: (show: boolean) => void;
   activeLoadingCountry: string | null;
+  activeMainSection: "tv" | "sports";
+  onSelectMainSection: (section: "tv" | "sports") => void;
 }
 
 export default function Sidebar({
@@ -31,7 +33,9 @@ export default function Sidebar({
   favoritesCount,
   showFavoritesOnly,
   onToggleFavoritesOnly,
-  activeLoadingCountry
+  activeLoadingCountry,
+  activeMainSection,
+  onSelectMainSection
 }: SidebarProps) {
   const [countrySearch, setCountrySearch] = useState("");
 
@@ -50,8 +54,8 @@ export default function Sidebar({
           className="flex items-center gap-3 cursor-pointer hover:opacity-85 select-none active:scale-[0.98] transition-all"
           title="Reload Home"
         >
-          <div className={`h-9 w-9 ${theme.accentBg} rounded-xl flex items-center justify-center shadow-lg shadow-black/20`}>
-            <Tv className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 overflow-hidden rounded-xl flex items-center justify-center shadow-lg shadow-black/25 border border-white/10 shrink-0">
+            <img src="/favicon.svg" alt="Bengal Stream Favicon" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           </div>
           <div>
             <span className="font-display font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1">
@@ -67,36 +71,65 @@ export default function Sidebar({
 
       <div className="p-4 flex flex-col gap-6 flex-grow">
 
-        {/* HIGH PRIORITY QUICK ACCESS TAB - BANGLADESH STREAM ACCELERATOR */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-extrabold text-slate-500 tracking-wider font-mono uppercase flex items-center gap-1.5">
-              <Flame className={`h-3 w-3 ${theme.accentText} animate-pulse`} /> Bengali Hub
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              onToggleFavoritesOnly(false);
-              onSelectCountry("bd");
-              onSelectCategory("all");
-            }}
-            className={`w-full text-left p-3.5 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
-              selectedCountry === "bd" && !showFavoritesOnly
-                ? "bg-white/5 border-white/20 text-white"
-                : "bg-white/5 border-white/5 hover:border-white/10 text-slate-300 hover:text-white"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl" role="img" aria-label="Bangladesh flag">🇧🇩</span>
-              <div>
-                <p className="text-xs font-bold font-display">Bangladesh Channels</p>
-                <p className={`text-[10px] ${theme.accentText} font-mono font-medium mt-0.5`}>High Speed Live Feeds</p>
-              </div>
+        {/* HIGH PRIORITY QUICK ACCESS TAB - DUAL PREMIUM HUBS */}
+        <div className="flex flex-col gap-3">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-extrabold text-slate-500 tracking-wider font-mono uppercase flex items-center gap-1.5">
+                <Flame className={`h-3 w-3 ${theme.accentText} animate-pulse`} /> Featured Hubs
+              </span>
             </div>
-            <ChevronRight className={`h-4 w-4 transition-transform duration-300 ${
-              selectedCountry === "bd" ? `translate-x-1 ${theme.accentText}` : "text-slate-500"
-            }`} />
-          </button>
+            <div className="flex flex-col gap-2">
+              {/* BENGALI HUB ACCESS POINT */}
+              <button
+                onClick={() => {
+                  onSelectMainSection("tv");
+                  onToggleFavoritesOnly(false);
+                  onSelectCountry("bd");
+                  onSelectCategory("all");
+                }}
+                className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
+                  selectedCountry === "bd" && !showFavoritesOnly && activeMainSection === "tv"
+                    ? "bg-white/10 border-white/20 text-white font-bold"
+                    : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl" role="img" aria-label="Bangladesh flag">🇧🇩</span>
+                  <div>
+                    <p className="text-xs font-bold font-display leading-tight">Bangladesh Channels</p>
+                    <p className={`text-[9.5px] ${theme.accentText} font-mono font-semibold mt-0.5`}>Live Action Feeds</p>
+                  </div>
+                </div>
+                <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                  selectedCountry === "bd" && activeMainSection === "tv" ? `translate-x-1 ${theme.accentText}` : "text-slate-500"
+                }`} />
+              </button>
+
+              {/* LIVE SPORTS ARENA HUB */}
+              <button
+                onClick={() => {
+                  onSelectMainSection("sports");
+                }}
+                className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
+                  activeMainSection === "sports"
+                    ? "bg-red-650/15 border-red-500/30 text-red-400 font-bold"
+                    : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl" role="img" aria-label="Trophy">🏆</span>
+                  <div>
+                    <p className="text-xs font-bold font-display leading-tight">Live Sports Arena</p>
+                    <p className="text-[9.5px] text-green-400 font-mono font-semibold mt-0.5">Google Auto-Sync Live</p>
+                  </div>
+                </div>
+                <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-300 ${
+                  activeMainSection === "sports" ? `translate-x-1 text-red-500` : "text-slate-500"
+                }`} />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* COLOR THEME CONTROLLER CHAMBER */}
@@ -131,7 +164,10 @@ export default function Sidebar({
         {/* FAVORITES VIEW TOGGLE */}
         <div>
           <button
-            onClick={() => onToggleFavoritesOnly(!showFavoritesOnly)}
+            onClick={() => {
+              onSelectMainSection("tv");
+              onToggleFavoritesOnly(!showFavoritesOnly);
+            }}
             className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
               showFavoritesOnly
                 ? `${theme.accentLightBg} ${theme.accentBorder} ${theme.accentText}`
@@ -167,6 +203,7 @@ export default function Sidebar({
                 <button
                   key={cat.id}
                   onClick={() => {
+                    onSelectMainSection("tv");
                     onToggleFavoritesOnly(false);
                     onSelectCategory(cat.id);
                   }}
@@ -216,6 +253,7 @@ export default function Sidebar({
                 <button
                   key={country.code}
                   onClick={() => {
+                    onSelectMainSection("tv");
                     onToggleFavoritesOnly(false);
                     onSelectCountry(country.code);
                   }}

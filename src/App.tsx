@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Menu, X, Tv, Heart, Radio, RefreshCw, Sparkles, HelpCircle, AlertCircle, Play, ChevronDown, Facebook, Linkedin, Github, Youtube, GripHorizontal } from "lucide-react";
+import { Menu, X, Tv, Heart, Radio, RefreshCw, Sparkles, HelpCircle, AlertCircle, Play, ChevronDown, Facebook, Linkedin, Github, Youtube, GripHorizontal, Plus, Trash2, Edit3, Sliders, FileText } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import ChannelGrid from "./components/ChannelGrid";
 import VideoPlayer from "./components/VideoPlayer";
 import FeaturedHero from "./components/FeaturedHero";
+import SportsArena from "./components/SportsArena";
 import { parseM3UFromURL } from "./utils/m3uParser";
 import { STATIC_CHANNELS } from "./data/staticChannels";
 import { Channel } from "./types";
@@ -123,6 +124,23 @@ export const THEMES: Theme[] = [
 export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+
+  // Sports Arena navigation mode
+  const [activeMainSection, setActiveMainSection] = useState<"tv" | "sports">("tv");
+
+  const handlePlaySportsChannel = (channelId: string) => {
+    const ch = STATIC_CHANNELS.find(c => c.id === channelId);
+    if (ch) {
+      setSelectedChannel(ch);
+      setActiveMainSection("tv");
+      setTimeout(() => {
+        const deck = document.getElementById("active-video-player-deck");
+        if (deck) {
+          deck.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 150);
+    }
+  };
   
   // Custom design themes state managers
   const [themeId, setThemeId] = useState(() => {
@@ -144,6 +162,164 @@ export default function App() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   
+  // Custom Channels and Editor Dialog states
+  const [customChannels, setCustomChannels] = useState<Channel[]>(() => {
+    try {
+      const saved = localStorage.getItem("bengalstream_custom_channels");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  
+  const [formName, setFormName] = useState("");
+  const [formUrl, setFormUrl] = useState("");
+  const [formLogo, setFormLogo] = useState("");
+  const [formCategory, setFormCategory] = useState("general");
+  const [formCountry, setFormCountry] = useState("bd");
+  const [formLanguage, setFormLanguage] = useState("Bengali");
+
+  const [m3uPasteText, setM3uPasteText] = useState("");
+  const [editorTab, setEditorTab] = useState<"form" | "bulk">("form");
+
+  const handleOpenAddEditor = () => {
+    setEditingChannel(null);
+    setFormName("");
+    setFormUrl("");
+    setFormLogo("");
+    setFormCategory("general");
+    setFormCountry("bd");
+    setFormLanguage("Bengali");
+    setEditorTab("form");
+    setIsEditorOpen(true);
+  };
+
+  const handleOpenEditEditor = (chan: Channel) => {
+    setEditingChannel(chan);
+    setFormName(chan.name);
+    setFormUrl(chan.url);
+    setFormLogo(chan.logo || "");
+    setFormCategory(chan.category || "general");
+    setFormCountry(chan.country || "bd");
+    setFormLanguage(chan.language || "Bengali");
+    setEditorTab("form");
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveChannel = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim() || !formUrl.trim()) return;
+
+    const streamUrl = formUrl.trim();
+    const logoUrl = formLogo.trim() || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(formName.trim())}`;
+    
+    let updated: Channel[];
+
+    if (editingChannel) {
+      updated = customChannels.map(c => 
+        c.id === editingChannel.id
+          ? {
+              ...c,
+              name: formName.trim(),
+              url: streamUrl,
+              logo: logoUrl,
+              category: formCategory,
+              country: formCountry.toLowerCase(),
+              language: formLanguage.trim()
+            }
+          : c
+      );
+    } else {
+      const newChan: Channel = {
+        id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        name: formName.trim(),
+        url: streamUrl,
+        logo: logoUrl,
+        category: formCategory,
+        country: formCountry.toLowerCase(),
+        countryName: formCountry.toUpperCase(),
+        language: formLanguage.trim(),
+        isFeatured: false,
+        alternateUrls: [streamUrl]
+      };
+      updated = [newChan, ...customChannels];
+    }
+
+    setCustomChannels(updated);
+    localStorage.setItem("bengalstream_custom_channels", JSON.stringify(updated));
+    setIsEditorOpen(false);
+  };
+
+  const handleDeleteChannel = (id: string) => {
+    const updated = customChannels.filter(c => c.id !== id);
+    setCustomChannels(updated);
+    localStorage.setItem("bengalstream_custom_channels", JSON.stringify(updated));
+    if (selectedChannel && selectedChannel.id === id) {
+      setSelectedChannel(STATIC_CHANNELS[0]);
+    }
+  };
+
+  const handleBulkM3UImport = () => {
+    if (!m3uPasteText.trim()) return;
+
+    const lines = m3uPasteText.split("\n");
+    const parsed: Channel[] = [];
+    let currentName = "";
+    let currentLogo = "";
+    let currentGroup = "general";
+    let currentLang = "English";
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith("#EXTINF:")) {
+        const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+        const nameMatch = line.match(/tvg-name="([^"]+)"/i);
+        const groupMatch = line.match(/group-title="([^"]+)"/i);
+        const langMatch = line.match(/tvg-language="([^"]+)"/i);
+        
+        currentLogo = logoMatch ? logoMatch[1] : "";
+        currentGroup = groupMatch ? groupMatch[1].trim().toLowerCase() : "general";
+        currentLang = langMatch ? langMatch[1] : "Bengali";
+        
+        const commaIndex = line.lastIndexOf(",");
+        if (commaIndex !== -1) {
+          currentName = line.substring(commaIndex + 1).trim();
+        } else if (nameMatch) {
+          currentName = nameMatch[1];
+        }
+      } else if (line.startsWith("http")) {
+        if (currentName) {
+          parsed.push({
+            id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${parsed.length}`,
+            name: currentName,
+            url: line,
+            logo: currentLogo || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(currentName)}`,
+            category: currentGroup,
+            country: "bd",
+            countryName: "Bangladesh",
+            language: currentLang,
+            isFeatured: false,
+            alternateUrls: [line]
+          });
+        }
+        currentName = "";
+        currentLogo = "";
+        currentGroup = "general";
+      }
+    }
+
+    if (parsed.length > 0) {
+      const updated = [...parsed, ...customChannels];
+      setCustomChannels(updated);
+      localStorage.setItem("bengalstream_custom_channels", JSON.stringify(updated));
+      setM3uPasteText("");
+      setIsEditorOpen(false);
+    }
+  };
+
   // Page load and network states
   const [isLoading, setIsLoading] = useState(false);
   const [activeLoadingCountry, setActiveLoadingCountry] = useState<string | null>(null);
@@ -265,13 +441,10 @@ export default function App() {
           if (playerAnchorRef.current) {
             const rect = playerAnchorRef.current.getBoundingClientRect();
             // Become floating when the layout anchor top has scrolled -150px off-screen
+            // We removed the footer proximity check so the PiP player remains completely stable and visible even at the very bottom
             const scrolledPastAnchor = rect.top < -150;
             
-            // Proximity check: disable floating when scrolled near the footer (approx bottom 380px)
-            const distanceFromBottom = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
-            const isNearFooter = distanceFromBottom < 380;
-            
-            setIsFloating(scrolledPastAnchor && !isNearFooter);
+            setIsFloating(scrolledPastAnchor);
           }
           ticking = false;
         });
@@ -426,15 +599,32 @@ export default function App() {
     setSelectedCountry("all");
   };
 
+  // Computes active loaded channels merged with custom user channels
+  const integratedChannels = useMemo(() => {
+    // Filter customs by active country and category
+    const activeCustom = customChannels.filter(c => {
+      if (selectedCountry !== "all" && c.country.toLowerCase() !== selectedCountry.toLowerCase()) {
+        return false;
+      }
+      if (selectedCategory !== "all" && c.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+
+    return mergeChannels(activeCustom, channels);
+  }, [channels, customChannels, selectedCountry, selectedCategory]);
+
   // Computes which channels should render based on active favorites state
   const computedChannels = useMemo(() => {
+    const baseList = integratedChannels;
     if (showFavoritesOnly) {
       // Find matches in either the currently loaded dynamic list or fallback static list
-      const allPossible = mergeChannels(STATIC_CHANNELS, channels);
+      const allPossible = mergeChannels(STATIC_CHANNELS, baseList);
       return allPossible.filter(c => favorites.includes(c.id));
     }
-    return channels;
-  }, [channels, showFavoritesOnly, favorites]);
+    return baseList;
+  }, [integratedChannels, showFavoritesOnly, favorites]);
 
   // Extract a popular subset list of static/featured elements for Hero sections
   const featuredList = useMemo(() => {
@@ -451,8 +641,8 @@ export default function App() {
           className="flex items-center gap-2.5 cursor-pointer hover:opacity-85 select-none active:scale-[0.98] transition-all"
           title="Reload Home"
         >
-          <div className={`h-8 w-8 ${activeTheme.accentBg} rounded-lg flex items-center justify-center`}>
-            <Tv className="h-4.5 w-4.5 text-white" />
+          <div className="h-8 w-8 overflow-hidden rounded-lg flex items-center justify-center border border-white/5 shrink-0 shadow-sm">
+            <img src="/favicon.svg" alt="Bengal Stream Favicon" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           </div>
           <span className="font-display font-black text-sm tracking-tight text-white uppercase flex items-center gap-1">
             BENGAL <span className={activeTheme.accentText}>STREAM</span>
@@ -496,6 +686,11 @@ export default function App() {
             showFavoritesOnly={showFavoritesOnly}
             onToggleFavoritesOnly={setShowFavoritesOnly}
             activeLoadingCountry={activeLoadingCountry}
+            activeMainSection={activeMainSection}
+            onSelectMainSection={(sec) => {
+              setActiveMainSection(sec);
+              setMobileMenuOpen(false);
+            }}
           />
         </div>
 
@@ -513,19 +708,21 @@ export default function App() {
           <div className="flex flex-col gap-6 sm:gap-8 w-full">
             
             {/* TOP GRAPHICAL HERO CONTAINER */}
-            <section id="hero-banner-billboard" className="w-full">
-              <FeaturedHero 
-                theme={activeTheme}
-                channel={selectedChannel}
-                onPlayChannel={(chan) => {
-                  setSelectedChannel(chan);
-                  document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                favorites={favorites}
-                onToggleFavorite={handleToggleFavorite}
-                featuredList={featuredList}
-              />
-            </section>
+            {activeMainSection === "tv" && (
+              <section id="hero-banner-billboard" className="w-full">
+                <FeaturedHero 
+                  theme={activeTheme}
+                  channel={selectedChannel}
+                  onPlayChannel={(chan) => {
+                    setSelectedChannel(chan);
+                    document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  favorites={favorites}
+                  onToggleFavorite={handleToggleFavorite}
+                  featuredList={featuredList}
+                />
+              </section>
+            )}
 
             {/* STICKY LIVE BROADCAST TERMINAL */}
             {selectedChannel && (
@@ -533,8 +730,30 @@ export default function App() {
                 {/* Layout Anchor used to preserve height and detect scroll offset */}
                 <div ref={playerAnchorRef} className="w-full h-[1px]" />
                 
+                {isFloating && (
+                  <div className={`hidden sm:flex flex-col items-center justify-center p-6 text-center rounded-2xl border border-white/5 bg-[#121212]/30 min-h-[200px] mb-6 w-full animate-in fade-in duration-300`}>
+                    <div className="bg-[#121212]/60 p-4 rounded-full border border-white/5 mb-3 shadow-inner">
+                      <Tv className="h-5 w-5 text-red-500 animate-pulse" />
+                    </div>
+                    <p className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                      Cast in Floating Window
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                      "{selectedChannel.name}" is playing in Picture-in-Picture mode. You can drag the video anywhere while searching channels.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        playerAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="mt-4 text-xs font-bold font-mono tracking-wider text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    >
+                      Dock Player Back
+                    </button>
+                  </div>
+                )}
+                
                 <section 
-                  id="active-video-player-deck" 
+                  id="active-video-player-deck"  
                   className={isFloating 
                     ? `fixed bottom-28 right-4 sm:bottom-32 sm:right-6 md:right-8 w-[320px] sm:w-[380px] max-w-[92vw] z-40 bg-[#0c0c0c]/98 sm:${activeTheme.bgCard} border ${activeTheme.borderClass} rounded-2xl p-3 shadow-2xl shadow-black/100 animate-in fade-in slide-in-from-bottom-6 cursor-grab active:cursor-grabbing`
                     : `bg-[#080808]/95 sm:${activeTheme.bgCard} border-b sm:border ${activeTheme.borderClass} sm:rounded-2xl p-0 sm:p-5 shadow-2xl shadow-black/95 w-full mx-auto`
@@ -627,167 +846,180 @@ export default function App() {
               </>
             )}
 
-            {/* SPECIALIZED ENTERTAINMENT LOUNGES CARD DECK */}
-            <section id="specialized-entertainment-lounges" className="w-full">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className={`h-4.5 w-4.5 ${activeTheme.accentText}`} />
-                <h2 className="text-xs font-black uppercase tracking-wider font-mono text-slate-400">
-                  Premium Curated Lounges
-                </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* CARTOONS LOUNGE */}
-                <div
-                  onClick={() => {
-                    setShowFavoritesOnly(false);
-                    handleSelectCategory("cartoons");
-                    const ch = STATIC_CHANNELS.find(c => c.id === "kids-disney-channel");
-                    if (ch) setSelectedChannel(ch);
-                    document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`group relative rounded-2xl bg-gradient-to-br from-rose-950/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-rose-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-rose-950/5 cursor-pointer overflow-hidden ${
-                    selectedCategory === "cartoons"
-                      ? "border-rose-500/40 ring-2 ring-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.12)]"
-                      : "border-white/5"
-                  }`}
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
-                      <span className="text-2xl select-none">🧙</span>
-                    </div>
-                    <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-rose-950/40 text-rose-455 border border-rose-500/15">
-                      4 PREMIUM NODES
-                    </span>
+            {activeMainSection === "tv" ? (
+              <>
+                {/* SPECIALIZED ENTERTAINMENT LOUNGES CARD DECK */}
+                <section id="specialized-entertainment-lounges" className="w-full">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className={`h-4.5 w-4.5 ${activeTheme.accentText}`} />
+                    <h2 className="text-xs font-black uppercase tracking-wider font-mono text-slate-400">
+                      Premium Curated Lounges
+                    </h2>
                   </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    {/* CARTOONS LOUNGE */}
+                    <div
+                      onClick={() => {
+                        setShowFavoritesOnly(false);
+                        handleSelectCategory("cartoons");
+                        const ch = STATIC_CHANNELS.find(c => c.id === "kids-disney-channel");
+                        if (ch) setSelectedChannel(ch);
+                        document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className={`group relative rounded-2xl bg-gradient-to-br from-rose-955/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-rose-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-rose-955/5 cursor-pointer overflow-hidden ${
+                        selectedCategory === "cartoons"
+                          ? "border-rose-500/40 ring-2 ring-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.12)]"
+                          : "border-white/5"
+                      }`}
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/15 transition-all duration-500"></div>
+                      <div className="flex items-start justify-between relative z-10">
+                        <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl select-none">🧙</span>
+                        </div>
+                        <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-rose-950/40 text-rose-455 border border-rose-500/15">
+                          4 PREMIUM NODES
+                        </span>
+                      </div>
 
-                  <div className="mt-4 relative z-10 flex flex-col gap-1">
-                    <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-rose-400 transition-colors">
-                      Cartoon Video Arena
-                    </h3>
-                    <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
-                      Classic 24/7 cartoons, Disney streams, and retro masterpieces to spark imagination.
-                    </p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-rose-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>⚡ ENTER NOW</span>
+                      <div className="mt-4 relative z-10 flex flex-col gap-1">
+                        <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-rose-400 transition-colors">
+                          Cartoon Video Arena
+                        </h3>
+                        <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
+                          Classic 24/7 cartoons, Disney streams, and retro masterpieces to spark imagination.
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-rose-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span>⚡ ENTER NOW</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* DRAMA LOUNGE */}
-                <div
-                  onClick={() => {
-                    setShowFavoritesOnly(false);
-                    handleSelectCategory("drama");
-                    const ch = STATIC_CHANNELS.find(c => c.id === "drama-hum-tv");
-                    if (ch) setSelectedChannel(ch);
-                    document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`group relative rounded-2xl bg-gradient-to-br from-indigo-950/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-indigo-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-indigo-950/5 cursor-pointer overflow-hidden ${
-                    selectedCategory === "drama"
-                      ? "border-indigo-500/40 ring-2 ring-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.12)]"
-                      : "border-white/5"
-                  }`}
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
-                      <span className="text-2xl select-none">🍿</span>
+                    {/* DRAMA LOUNGE */}
+                    <div
+                      onClick={() => {
+                        setShowFavoritesOnly(false);
+                        handleSelectCategory("drama");
+                        const ch = STATIC_CHANNELS.find(c => c.id === "drama-hum-tv");
+                        if (ch) setSelectedChannel(ch);
+                        document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className={`group relative rounded-2xl bg-gradient-to-br from-indigo-955/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-indigo-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-indigo-955/5 cursor-pointer overflow-hidden ${
+                        selectedCategory === "drama"
+                          ? "border-indigo-500/40 ring-2 ring-indigo-500/10 shadow-[0_0_20px_rgba(99,102,241,0.12)]"
+                          : "border-white/5"
+                      }`}
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/15 transition-all duration-500"></div>
+                      <div className="flex items-start justify-between relative z-10">
+                        <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl select-none">🎭</span>
+                        </div>
+                        <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-950/40 text-indigo-455 border border-indigo-500/15">
+                          5 PREMIUM NODES
+                        </span>
+                      </div>
+
+                      <div className="mt-4 relative z-10 flex flex-col gap-1">
+                        <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-indigo-400 transition-colors">
+                          Premium Drama Hub
+                        </h3>
+                        <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
+                          Binge iconic drama series, PAK drama networks, and high-suspense stories.
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-indigo-455 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span>⚡ ENTER NOW</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-950/40 text-indigo-400 border border-indigo-500/15">
-                      5 PREMIUM NODES
-                    </span>
-                  </div>
 
-                  <div className="mt-4 relative z-10 flex flex-col gap-1">
-                    <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-indigo-400 transition-colors">
-                      Premium Drama Hub
-                    </h3>
-                    <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
-                      Binge iconic drama series, PAK drama networks, and high-suspense stories.
-                    </p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-indigo-455 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>⚡ ENTER NOW</span>
+                    {/* MOVIES LOUNGE */}
+                    <div
+                      onClick={() => {
+                        setShowFavoritesOnly(false);
+                        handleSelectCategory("movies");
+                        const ch = STATIC_CHANNELS.find(c => c.id === "movies-spotlight-blockbusters");
+                        if (ch) setSelectedChannel(ch);
+                        document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className={`group relative rounded-2xl bg-gradient-to-br from-amber-955/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-amber-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-amber-955/5 cursor-pointer overflow-hidden ${
+                        selectedCategory === "movies"
+                          ? "border-amber-500/40 ring-2 ring-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.12)]"
+                          : "border-white/5"
+                      }`}
+                    >
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/15 transition-all duration-500"></div>
+                      <div className="flex items-start justify-between relative z-10">
+                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
+                          <span className="text-2xl select-none">🎬</span>
+                        </div>
+                        <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-amber-955/40 text-amber-400 border border-amber-500/15">
+                          13 LIVE NODES
+                        </span>
+                      </div>
+
+                      <div className="mt-4 relative z-10 flex flex-col gap-1">
+                        <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-amber-400 transition-colors">
+                          Blockbuster Movies
+                        </h3>
+                        <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
+                          Hollywood blockbusters, Action thrillers, and global curated cinematic streams.
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-amber-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span>⚡ ENTER NOW</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* MOVIES LOUNGE */}
-                <div
-                  onClick={() => {
-                    setShowFavoritesOnly(false);
-                    handleSelectCategory("movies");
-                    const ch = STATIC_CHANNELS.find(c => c.id === "movies-spotlight-blockbusters");
-                    if (ch) setSelectedChannel(ch);
-                    document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`group relative rounded-2xl bg-gradient-to-br from-amber-955/20 via-[#0d0d0d] to-[#040404] border flex flex-col justify-between p-5 min-h-[145px] hover:border-amber-500/35 transition-all duration-300 transform hover:-translate-y-1 shadow-xl hover:shadow-amber-950/5 cursor-pointer overflow-hidden ${
-                    selectedCategory === "movies"
-                      ? "border-amber-500/40 ring-2 ring-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.12)]"
-                      : "border-white/5"
-                  }`}
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/15 transition-all duration-500"></div>
-                  <div className="flex items-start justify-between relative z-10">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
-                      <span className="text-2xl select-none">🎬</span>
+                  </div>
+                </section>
+
+                {/* CHANNELS GRID CATALOGUE CARD */}
+                <section id="channels-catalogue-bento" className="w-full">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className={`h-4.5 w-4.5 ${activeTheme.accentText}`} />
+                      <h2 className="text-sm sm:text-base font-bold text-white font-display">
+                        {showFavoritesOnly ? "Your Bookmarked Channels" : "Live Stream Channel Listings"}
+                      </h2>
                     </div>
-                    <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-amber-955/40 text-amber-400 border border-amber-500/15">
-                      13 LIVE NODES
-                    </span>
+                    {showFavoritesOnly && (
+                      <button 
+                        onClick={() => setShowFavoritesOnly(false)}
+                        className={`text-xs ${activeTheme.accentText} hover:opacity-80 font-bold hover:underline cursor-pointer`}
+                      >
+                        Show All Available Channels
+                      </button>
+                    )}
                   </div>
-
-                  <div className="mt-4 relative z-10 flex flex-col gap-1">
-                    <h3 className="font-display font-extrabold text-sm text-slate-100 group-hover:text-amber-400 transition-colors">
-                      Blockbuster Movies
-                    </h3>
-                    <p className="text-[10px] text-slate-450 leading-normal line-clamp-2">
-                      Hollywood blockbusters, Action thrillers, and global curated cinematic streams.
-                    </p>
-                    <div className="flex items-center gap-1.5 text-[9px] font-bold font-mono text-amber-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span>⚡ ENTER NOW</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </section>
-
-            {/* CHANNELS GRID CATALOGUE CARD */}
-            <section id="channels-catalogue-bento" className="w-full">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className={`h-4.5 w-4.5 ${activeTheme.accentText}`} />
-                  <h2 className="text-sm sm:text-base font-bold text-white font-display">
-                    {showFavoritesOnly ? "Your Bookmarked Channels" : "Live Stream Channel Listings"}
-                  </h2>
-                </div>
-                {showFavoritesOnly && (
-                  <button 
-                    onClick={() => setShowFavoritesOnly(false)}
-                    className={`text-xs ${activeTheme.accentText} hover:opacity-80 font-bold hover:underline cursor-pointer`}
-                  >
-                    Show All Available Channels
-                  </button>
-                )}
-              </div>
-              
-              <ChannelGrid 
-                theme={activeTheme}
-                channels={computedChannels}
-                selectedChannel={selectedChannel}
-                onSelectChannel={(chan) => {
-                  setSelectedChannel(chan);
-                  document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                favorites={favorites}
-                onToggleFavorite={handleToggleFavorite}
-                isLoading={isLoading}
-                onResetToStatic={handleResetToStatic}
-              />
-            </section>
+                  
+                  <ChannelGrid 
+                    theme={activeTheme}
+                    channels={computedChannels}
+                    selectedChannel={selectedChannel}
+                    onSelectChannel={(chan) => {
+                      setSelectedChannel(chan);
+                      document.getElementById("active-video-player-deck")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    favorites={favorites}
+                    onToggleFavorite={handleToggleFavorite}
+                    isLoading={isLoading}
+                    onResetToStatic={handleResetToStatic}
+                    onOpenEditor={handleOpenAddEditor}
+                  />
+                </section>
+              </>
+            ) : (
+              <section id="primary-sports-arena-section" className="w-full">
+                <SportsArena 
+                  theme={activeTheme}
+                  onPlaySportsChannel={handlePlaySportsChannel}
+                  staticChannels={STATIC_CHANNELS}
+                />
+              </section>
+            )}
 
           </div>
         </main>
@@ -866,6 +1098,250 @@ export default function App() {
           </span>
         </div>
       </footer>
+
+      {/* Dynamic Channel Editor Pop-up Modal */}
+      {isEditorOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto font-sans">
+          <div className="bg-[#0b0b0b] border border-white/10 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden text-slate-200 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-white/5 bg-[#121212]/50 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`h-8 w-8 ${activeTheme.accentBg} rounded-lg flex items-center justify-center`}>
+                  <Sliders className="h-4.5 w-4.5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold font-display uppercase tracking-wider text-white">
+                    {editingChannel ? `Edit Stream: ${editingChannel.name}` : "IPTV Custom Stream Editor"}
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-mono">Add manual channels or import raw M3U play-gateways</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsEditorOpen(false)}
+                className="p-1 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer border-none outline-none"
+                title="Cancel & Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Tab Controllers */}
+            <div className="flex border-b border-white/5 bg-[#090909]/95 px-5">
+              <button
+                onClick={() => setEditorTab("form")}
+                className={`py-3.5 px-4 text-xs font-bold font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                  editorTab === "form" 
+                    ? "border-red-650 text-white" 
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Plus className="h-3.5 w-3.5 inline mr-1.5" /> {editingChannel ? "Edit Stream Form" : "Custom Channel Form"}
+              </button>
+              <button
+                onClick={() => setEditorTab("bulk")}
+                className={`py-3.5 px-4 text-xs font-bold font-mono uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                  editorTab === "bulk" 
+                    ? "border-red-650 text-white" 
+                    : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5 inline mr-1.5" /> Import M3U Playlist
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+              {editorTab === "form" ? (
+                <div className="space-y-6">
+                  {/* Form Container */}
+                  <form onSubmit={handleSaveChannel} className="space-y-4 select-none">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">Channel Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={formName}
+                          onChange={(e) => setFormName(e.target.value)}
+                          placeholder="e.g. Gaan Bangla TV"
+                          className="w-full bg-[#121212]/90 text-slate-100 placeholder-slate-600 text-xs px-3 py-2.5 rounded-lg border border-white/5 focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">Stream URL (.m3u8 / IPTV source)</label>
+                        <input
+                          type="url"
+                          required
+                          value={formUrl}
+                          onChange={(e) => setFormUrl(e.target.value)}
+                          placeholder="https://example.com/stream/index.m3u8"
+                          className="w-full bg-[#121212]/90 text-slate-100 placeholder-slate-600 text-xs px-3 py-2.5 rounded-lg border border-white/5 focus:outline-none focus:border-red-500 pointer-events-auto"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">Logo URL (Optional)</label>
+                        <input
+                          type="text"
+                          value={formLogo}
+                          onChange={(e) => setFormLogo(e.target.value)}
+                          placeholder="Leave empty for avatar fallback"
+                          className="w-full bg-[#121212]/90 text-slate-100 placeholder-slate-600 text-xs px-3 py-2.5 rounded-lg border border-white/5 focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">Category Group</label>
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value)}
+                          className="w-full bg-[#121212]/90 text-slate-200 text-xs px-3 py-2.5 rounded-lg border border-white/5 focus:outline-none focus:border-red-500 cursor-pointer"
+                        >
+                          <option value="general">⚽ General</option>
+                          <option value="news">📰 News Broadcasts</option>
+                          <option value="sports">🛹 Active Sports</option>
+                          <option value="music">🎵 Music Tunes & GB</option>
+                          <option value="movies">🎬 Film Cinema</option>
+                          <option value="entertainment">🎮 Entertainment</option>
+                          <option value="cartoons">🧸 Animation Cartoons</option>
+                          <option value="drama">📚 Series Drama</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">Target Country</label>
+                        <select
+                          value={formCountry}
+                          onChange={(e) => setFormCountry(e.target.value)}
+                          className="w-full bg-[#121212]/90 text-slate-200 text-xs px-3 py-2.5 rounded-lg border border-white/5 focus:outline-none focus:border-red-500 cursor-pointer"
+                        >
+                          <option value="bd">🇧🇩 Bangladesh (Primary)</option>
+                          <option value="in">🇮🇳 India</option>
+                          <option value="pk">🇵🇰 Pakistan</option>
+                          <option value="us">🇺🇸 United States</option>
+                          <option value="gb">🇬🇧 United Kingdom</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex pt-2 justify-end gap-3">
+                      {editingChannel && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingChannel(null);
+                            setFormName("");
+                            setFormUrl("");
+                            setFormLogo("");
+                            setFormCategory("general");
+                            setFormCountry("bd");
+                          }}
+                          className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-red-600 hover:bg-red-750 text-white rounded-lg text-xs font-bold shadow-lg transition-all cursor-pointer"
+                      >
+                        {editingChannel ? "Apply Modifications" : "Assemble Custom Channel"}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Custom Channel listings registry */}
+                  <div className="border-t border-white/5 pt-5 space-y-3">
+                    <h4 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">
+                      🖥️ Your Created Streams Registry ({customChannels.length})
+                    </h4>
+                    
+                    {customChannels.length === 0 ? (
+                      <div className="p-8 text-center border border-dashed border-white/5 bg-white/5 rounded-xl text-slate-500 text-xs">
+                        No manual channels added yet. Fill out the form above to deploy a custom stream node to your active catalog deck!
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                        {customChannels.map((chan) => (
+                          <div 
+                            key={chan.id}
+                            className="bg-[#121212]/90 border border-white/5 p-3 rounded-xl flex items-center justify-between gap-3 shadow-inner hover:border-white/10 transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img 
+                                src={chan.logo} 
+                                alt={chan.name}
+                                onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(chan.name)}`; }}
+                                className="w-8 h-8 rounded-lg object-contain bg-black p-1 shrink-0 border border-white/5"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-200 truncate">{chan.name}</p>
+                                <p className="text-[9px] text-slate-500 font-mono uppercase truncate mt-0.5">{chan.category || "General"} • {chan.countryName || "BD"}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 shrink-0">
+                              <button
+                                onClick={() => handleOpenEditEditor(chan)}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer border-none"
+                                title="Edit details"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteChannel(chan.id)}
+                                className="p-1.5 rounded-lg bg-red-650/10 hover:bg-red-650 text-red-500 hover:text-white transition-colors cursor-pointer border-none"
+                                title="Delete node"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-wider font-mono font-bold text-slate-400">
+                      Paste M3U Playlist Content (.m3u / .txt text block)
+                    </label>
+                    <textarea
+                      rows={10}
+                      value={m3uPasteText}
+                      onChange={(e) => setM3uPasteText(e.target.value)}
+                      placeholder={`#EXTM3U\n#EXTINF:-1 tvg-logo="https://example.com/logo.png" group-title="music",GB Music Bangla\nhttp://example.com/bangla_live.m3u8`}
+                      className="w-full bg-[#121212]/95 text-slate-100 placeholder-slate-600 text-xs px-3.5 py-3 rounded-lg border border-white/5 focus:outline-none focus:border-red-500 font-mono leading-relaxed"
+                    />
+                  </div>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={handleBulkM3UImport}
+                      className="px-5 py-2.5 bg-red-600 hover:bg-red-750 text-white rounded-lg text-xs font-bold shadow-lg transition-all cursor-pointer flex items-center gap-1.5 border-none"
+                    >
+                      <Plus className="h-4 w-4" /> Import M3U Stream Entries
+                    </button>
+                  </div>
+                  <div className="bg-[#121212]/45 border border-white/5 p-3 rounded-xl flex items-start gap-2.5 shadow-inner">
+                    <HelpCircle className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-slate-400 leading-normal font-sans">
+                      <span className="font-bold text-slate-300">Format Guide:</span> Paste standard IPTV playlist text. Lines with <code className="text-red-400">#EXTINF:</code> define metadata (names, logos), and the next subsequent non-empty line must represent the playable <code className="text-red-400">.m3u8</code> stream connection.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-white/5 bg-[#121212]/50 text-center text-[10px] text-slate-500">
+              User Dynamic Storage Synced Securely • Local Database Node Active
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
