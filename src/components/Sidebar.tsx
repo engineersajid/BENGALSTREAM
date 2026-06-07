@@ -54,11 +54,11 @@ export default function Sidebar({
           className="flex items-center gap-3 cursor-pointer hover:opacity-85 select-none active:scale-[0.98] transition-all"
           title="Reload Home"
         >
-          <div className="h-9 w-9 overflow-hidden rounded-xl flex items-center justify-center shadow-lg shadow-black/25 border border-white/10 shrink-0">
-            <img src="/favicon.svg" alt="Bengal Stream Favicon" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          <div className={`h-9 w-9 ${theme.accentBg} rounded-xl flex items-center justify-center shadow-lg shadow-black/20`}>
+            <Tv className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="font-display font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-1">
+            <span className={`font-display font-extrabold text-sm sm:text-base tracking-tight ${theme.id === "bengal-light" ? "text-slate-900" : "text-white"} flex items-center gap-1`}>
               BENGAL <span className={theme.accentText}>STREAM</span>
             </span>
             <p className="text-[10px] text-slate-500 font-mono tracking-wider font-semibold">GLOBAL LIVE TV</p>
@@ -90,8 +90,8 @@ export default function Sidebar({
                 }}
                 className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
                   selectedCountry === "bd" && !showFavoritesOnly && activeMainSection === "tv"
-                    ? "bg-white/10 border-white/20 text-white font-bold"
-                    : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"
+                    ? `${theme.id === "bengal-light" ? "bg-red-600 text-white border-transparent font-bold" : "bg-white/10 border-white/20 text-white font-bold"}`
+                    : `${theme.id === "bengal-light" ? "bg-slate-200/50 border-slate-300/40 text-slate-700 hover:bg-slate-200" : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"}`
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -113,8 +113,8 @@ export default function Sidebar({
                 }}
                 className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
                   activeMainSection === "sports"
-                    ? "bg-red-650/15 border-red-500/30 text-red-400 font-bold"
-                    : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"
+                    ? `${theme.id === "bengal-light" ? "bg-red-650 text-white border-transparent font-bold" : "bg-red-650/15 border-red-500/30 text-red-400 font-bold"}`
+                    : `${theme.id === "bengal-light" ? "bg-slate-200/50 border-slate-300/40 text-slate-700 hover:bg-slate-200" : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-350 hover:text-white"}`
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -148,8 +148,8 @@ export default function Sidebar({
                   onClick={() => onChangeTheme(t.id)}
                   className={`p-1.5 rounded-lg text-left text-[10px] font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer border ${
                     isSelected
-                      ? "bg-white/15 border-white/30 text-white font-extrabold"
-                      : "bg-[#141414] border-white/5 text-slate-400 hover:text-slate-200"
+                      ? `${theme.id === "bengal-light" ? "bg-red-600 border-transparent text-white font-extrabold" : "bg-white/15 border-white/30 text-white font-extrabold"}`
+                      : `${theme.id === "bengal-light" ? "bg-slate-200/50 border-slate-200 text-slate-600 hover:bg-slate-200" : "bg-[#141414] border-white/5 text-slate-400 hover:text-slate-200"}`
                   }`}
                   title={t.name}
                 >
@@ -171,7 +171,7 @@ export default function Sidebar({
             className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
               showFavoritesOnly
                 ? `${theme.accentLightBg} ${theme.accentBorder} ${theme.accentText}`
-                : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"
+                : `${theme.id === "bengal-light" ? "bg-slate-200/50 border-slate-200 text-slate-600 hover:bg-slate-200" : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"}`
             }`}
           >
             <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function Sidebar({
               </div>
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              showFavoritesOnly ? `${theme.accentBg} text-white` : "bg-[#222] text-slate-400"
+              showFavoritesOnly ? `${theme.accentBg} text-white` : `${theme.id === "bengal-light" ? "bg-slate-200 text-slate-605" : "bg-[#222] text-slate-400"}`
             }`}>
               {favoritesCount}
             </span>
@@ -209,8 +209,8 @@ export default function Sidebar({
                   }}
                   className={`w-full text-left py-2 px-3 rounded-lg text-xs font-medium font-display flex items-center justify-between transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-white/10 text-white border-l-2 border-red-600 font-bold"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      ? `${theme.id === "bengal-light" ? "bg-slate-200/50 text-slate-900 border-l-2 border-red-600 font-bold" : "bg-white/10 text-white border-l-2 border-red-600 font-bold"}`
+                      : `${theme.id === "bengal-light" ? "text-slate-600 hover:bg-slate-200" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -240,7 +240,7 @@ export default function Sidebar({
               placeholder="Search Countries..."
               value={countrySearch}
               onChange={(e) => setCountrySearch(e.target.value)}
-              className="w-full bg-[#161616] text-[#f1f1f1] placeholder-slate-500 text-xs px-8 py-2 rounded-lg border border-white/5 focus:outline-none focus:border-red-655 transition-colors"
+              className={`w-full ${theme.id === "bengal-light" ? "bg-white text-slate-800 placeholder-slate-400 border-slate-300" : "bg-[#161616] text-[#f1f1f1] placeholder-slate-500 border-white/5"} text-xs px-8 py-2 rounded-lg border focus:outline-none focus:border-red-600 transition-colors`}
             />
           </div>
 
@@ -259,8 +259,8 @@ export default function Sidebar({
                   }}
                   className={`p-2 rounded-lg border text-left flex flex-col gap-1 transition-all active:scale-95 cursor-pointer relative overflow-hidden ${
                     isSelected
-                      ? "bg-white/10 border-white/20 text-white"
-                      : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"
+                      ? `${theme.id === "bengal-light" ? "bg-red-50 border-red-300 text-red-600 font-semibold" : "bg-white/10 border-white/20 text-white"}`
+                      : `${theme.id === "bengal-light" ? "bg-white border-slate-200 text-slate-600 hover:bg-slate-100" : "bg-[#121212] border-white/5 hover:border-white/10 text-slate-400 hover:text-slate-200"}`
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -286,8 +286,8 @@ export default function Sidebar({
         {/* Current server status box inline with Design HTML */}
         <div className={`mt-4 pt-4 border-t ${theme.borderClass}`}>
           <div className={`bg-gradient-to-br ${theme.gradientFrom} to-transparent border ${theme.accentBorder} rounded-xl p-4`}>
-            <p className="text-[10px] text-slate-455 mb-1.5 font-semibold uppercase tracking-wider font-mono">Current Server Load</p>
-            <p className="text-sm font-extrabold font-display text-white">4,281 Live Channels</p>
+            <p className="text-[10px] text-slate-550 mb-1.5 font-semibold uppercase tracking-wider font-mono">Current Server Load</p>
+            <p className={`text-sm font-extrabold font-display ${theme.id === "bengal-light" ? "text-slate-900" : "text-white"}`}>4,281 Live Channels</p>
             <p className={`text-[9px] ${theme.accentText} font-mono font-bold mt-1 uppercase tracking-wider flex items-center gap-1`}>
               <span className={`h-1.5 w-1.5 rounded-full ${theme.accentBg} animate-pulse`}></span> All Systems Nominal
             </p>

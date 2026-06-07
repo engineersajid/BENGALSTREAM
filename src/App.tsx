@@ -641,10 +641,10 @@ export default function App() {
           className="flex items-center gap-2.5 cursor-pointer hover:opacity-85 select-none active:scale-[0.98] transition-all"
           title="Reload Home"
         >
-          <div className="h-8 w-8 overflow-hidden rounded-lg flex items-center justify-center border border-white/5 shrink-0 shadow-sm">
-            <img src="/favicon.svg" alt="Bengal Stream Favicon" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          <div className={`h-8 w-8 ${activeTheme.accentBg} rounded-lg flex items-center justify-center`}>
+            <Tv className="h-4.5 w-4.5 text-white" />
           </div>
-          <span className="font-display font-black text-sm tracking-tight text-white uppercase flex items-center gap-1">
+          <span className={`font-display font-black text-sm tracking-tight ${activeTheme.id === "bengal-light" ? "text-slate-900" : "text-white"} uppercase flex items-center gap-1`}>
             BENGAL <span className={activeTheme.accentText}>STREAM</span>
           </span>
         </div>
@@ -981,7 +981,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Sparkles className={`h-4.5 w-4.5 ${activeTheme.accentText}`} />
-                      <h2 className="text-sm sm:text-base font-bold text-white font-display">
+                      <h2 className={`text-sm sm:text-base font-bold ${activeTheme.textPrimary} font-display`}>
                         {showFavoritesOnly ? "Your Bookmarked Channels" : "Live Stream Channel Listings"}
                       </h2>
                     </div>
@@ -1037,18 +1037,17 @@ export default function App() {
           </p>
         </div>
 
-        {/* FOUR PREMIUM BRANDED SOCIAL BADGES */}
-        <div className="flex flex-wrap items-center gap-3 justify-center select-none">
+        {/* FOUR PREMIUM COMPACT SOCIAL BADGES - COMPACT SQUIRCLES */}
+        <div className="flex items-center gap-3 justify-center select-none">
           {/* YouTube Icon */}
           <a
             href="https://www.youtube.com/@ExplorerMotivation"
             target="_blank"
             rel="noreferrer"
-            className="group flex items-center justify-center gap-2 bg-red-600/10 hover:bg-red-600/20 text-[#FF0000] border border-red-500/15 hover:border-red-500/35 p-3 md:px-4 md:py-2.5 rounded-2xl text-xs font-bold font-mono tracking-wide transition-all shadow-md active:scale-[0.98]"
+            className="group h-11 w-11 flex items-center justify-center bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/15 hover:border-red-500/40 rounded-xl transition-all shadow-md active:scale-95 duration-300"
             title="Explorer Motivation on YouTube"
           >
-            <Youtube className="h-5 w-5 text-[#FF0000] group-hover:scale-110 transition-transform" />
-            <span className="hidden md:inline text-slate-300 group-hover:text-white transition-colors font-display font-medium">Explorer Motivation</span>
+            <Youtube className="h-5 w-5 text-red-500 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300" />
           </a>
 
           {/* Facebook Icon */}
@@ -1056,11 +1055,10 @@ export default function App() {
             href="https://www.facebook.com/programmer.sajid"
             target="_blank"
             rel="noreferrer"
-            className="group flex items-center justify-center gap-2 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-[#1877F2] border border-[#1877F2]/15 hover:border-[#1877F2]/35 p-3 md:px-4 md:py-2.5 rounded-2xl text-xs font-bold font-mono tracking-wide transition-all shadow-md active:scale-[0.98]"
+            className="group h-11 w-11 flex items-center justify-center bg-[#1877F2]/10 hover:bg-[#1877F2]/20 text-[#1877F2] border border-[#1877F2]/15 hover:border-[#1877F2]/40 rounded-xl transition-all shadow-md active:scale-95 duration-300"
             title="Sajid's Facebook Profile"
           >
-            <Facebook className="h-5 w-5 group-hover:scale-110 transition-transform" />
-            <span className="hidden md:inline text-slate-300 group-hover:text-white transition-colors font-display font-medium">Facebook</span>
+            <Facebook className="h-5 w-5 group-hover:scale-125 group-hover:-rotate-6 transition-all duration-300" />
           </a>
 
           {/* LinkedIn Icon */}
@@ -1068,11 +1066,10 @@ export default function App() {
             href="https://linkedin.com/in/developersajid"
             target="_blank"
             rel="noreferrer"
-            className="group flex items-center justify-center gap-2 bg-[#0A66C2]/10 hover:bg-[#0A66C2]/20 text-[#0A66C2] border border-[#0A66C2]/15 hover:border-[#0A66C2]/35 p-3 md:px-4 md:py-2.5 rounded-2xl text-xs font-bold font-mono tracking-wide transition-all shadow-md active:scale-[0.98]"
+            className="group h-11 w-11 flex items-center justify-center bg-[#0A66C2]/10 hover:bg-[#0A66C2]/20 text-[#0A66C2] border border-[#0A66C2]/15 hover:border-[#0A66C2]/40 rounded-xl transition-all shadow-md active:scale-95 duration-300"
             title="Sajid's LinkedIn Connect"
           >
-            <Linkedin className="h-5 w-5 group-hover:scale-110 transition-transform" />
-            <span className="hidden md:inline text-slate-300 group-hover:text-white transition-colors font-display font-medium">LinkedIn</span>
+            <Linkedin className="h-5 w-5 group-hover:scale-125 group-hover:rotate-6 transition-all duration-300" />
           </a>
 
           {/* GitHub Icon */}
@@ -1080,11 +1077,10 @@ export default function App() {
             href="https://github.com/engineersajid/"
             target="_blank"
             rel="noreferrer"
-            className="group flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 hover:border-white/20 p-3 md:px-4 md:py-2.5 rounded-2xl text-xs font-bold font-mono tracking-wide transition-all shadow-md active:scale-[0.98]"
+            className="group h-11 w-11 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 hover:border-white/20 rounded-xl transition-all shadow-md active:scale-95 duration-300"
             title="Sajid's GitHub"
           >
-            <Github className="h-5 w-5 text-white group-hover:scale-110 transition-transform" />
-            <span className="hidden md:inline text-slate-300 group-hover:text-white transition-colors font-display font-medium">GitHub</span>
+            <Github className="h-5 w-5 text-white group-hover:scale-125 group-hover:-rotate-6 transition-all duration-300" />
           </a>
         </div>
 

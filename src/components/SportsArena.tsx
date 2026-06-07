@@ -326,16 +326,16 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
   }, [sportsData, filterSport]);
 
   return (
-    <div className="w-full bg-[#070707]/90 border border-white/5 rounded-2xl p-5 sm:p-7 shadow-2xl text-slate-100 animate-in fade-in duration-300">
+    <div className={`w-full ${theme.id === "bengal-light" ? "bg-white border-slate-200 text-slate-850" : "bg-[#070707]/90 border-white/5 text-slate-100"} border rounded-2xl p-5 sm:p-7 shadow-2xl animate-in fade-in duration-300`}>
       
       {/* SECTION GRAPHIC BANNER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-white/10 gap-4 mb-6">
+      <div className={`flex flex-col md:flex-row md:items-center justify-between pb-6 border-b ${theme.id === "bengal-light" ? "border-slate-200" : "border-white/10"} gap-4 mb-6`}>
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 bg-red-600/15 text-red-500 border border-red-500/25 rounded-xl flex items-center justify-center animate-pulse">
             <Trophy className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-extrabold font-display uppercase tracking-wider text-white flex items-center gap-2">
+            <h2 className={`text-lg sm:text-xl font-extrabold font-display uppercase tracking-wider ${theme.id === "bengal-light" ? "text-slate-900" : "text-white"} flex items-center gap-2`}>
               Sajid's Sports Center 
               {sportsData?.footballWorldCupActive && (
                 <span className="text-[9px] bg-red-650 text-white font-mono font-bold px-2 py-0.5 rounded-full tracking-widest uppercase">
@@ -354,7 +354,7 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
         </div>
 
         {/* Sync telemetry information indicator */}
-        <div className="flex items-center gap-3 bg-[#111] border border-white/5 px-4 py-2 rounded-xl text-xs font-mono">
+        <div className={`flex items-center gap-3 ${theme.id === "bengal-light" ? "bg-slate-50 border-slate-200 text-slate-800" : "bg-[#111] border-white/5 text-white"} border px-4 py-2 rounded-xl text-xs font-mono`}>
           <Activity className={`h-4 w-4 ${syncStatus === "Updating" ? "text-yellow-500 animate-spin" : syncStatus === "Error" ? "text-red-500" : "text-emerald-500"}`} />
           <div className="text-right">
             <p className="text-[10px] uppercase font-bold text-slate-400">Match Grounding Connection</p>
@@ -366,7 +366,7 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
             type="button" 
             onClick={() => fetchSportsData(true)}
             disabled={syncStatus === "Updating"}
-            className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer border border-white/5 active:scale-95 disabled:opacity-50"
+            className={`p-1.5 rounded transition-colors cursor-pointer border active:scale-95 disabled:opacity-50 ${theme.id === "bengal-light" ? "bg-slate-200 border-slate-300 text-slate-700 hover:bg-slate-300 hover:text-slate-900" : "bg-white/5 border-white/5 text-slate-300 hover:text-white hover:bg-white/10"}`}
             title="Force Google Search Refresh"
           >
             <RefreshCw className={`h-3 w-3 ${syncStatus === "Updating" ? "animate-spin" : ""}`} />
@@ -453,7 +453,7 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
             </div>
 
             {/* Channels deck specifically for sports section */}
-            <div className="flex flex-col gap-2 bg-[#121212]/50 p-3 rounded-xl border border-white/5">
+            <div className={`flex flex-col gap-2 ${theme.id === "bengal-light" ? "bg-slate-100/70 border-slate-200" : "bg-[#121212]/50 border-white/5"} p-3 rounded-xl border`}>
               <span className="text-[10px] font-mono font-bold text-slate-450 uppercase tracking-widest block mb-1">
                 ⚡ Change Channels Directly
               </span>
@@ -465,7 +465,7 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
                     className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold font-mono transition-all uppercase cursor-pointer ${
                       sportsChannel.id === ch.id 
                         ? "bg-red-650/20 border-red-500 text-red-400" 
-                        : "bg-white/5 border-white/5 text-slate-300 hover:border-white/10"
+                        : `${theme.id === "bengal-light" ? "bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800" : "bg-white/5 border-white/5 text-slate-300 hover:border-white/10"}`
                     }`}
                   >
                     🎥 {ch.name}
@@ -475,15 +475,15 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
             </div>
           </div>
         ) : (
-          <div className="relative bg-[#0d0d0d] border border-white/5 rounded-2xl p-6 overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl bg-[radial-gradient(ellipse_at_right,rgba(239,68,68,0.06),transparent_60%)]">
+          <div className={`relative ${theme.id === "bengal-light" ? "bg-slate-100/50 border-slate-200" : "bg-[#0d0d0d] border-white/5"} border rounded-2xl p-6 overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6 shadow-xl`}>
             <div className="max-w-xl text-center lg:text-left">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-mono font-extrabold tracking-widest bg-red-650 text-white uppercase mb-3.5 shadow-sm">
                 <Sparkles className="h-2.5 w-2.5 animate-spin" /> Sports Arena Live Tuner
               </span>
-              <h3 className="text-base sm:text-lg font-bold text-white font-display uppercase tracking-tight">
+              <h3 className={`text-base sm:text-lg font-bold ${theme.id === "bengal-light" ? "text-slate-900" : "text-white"} font-display uppercase tracking-tight`}>
                 Embedded Multicast Broadcaster Ready
               </h3>
-              <p className="text-[11px] sm:text-xs text-slate-350 leading-relaxed mt-1.5">
+              <p className={`text-[11px] sm:text-xs ${theme.id === "bengal-light" ? "text-slate-600" : "text-slate-350"} leading-relaxed mt-1.5`}>
                 Watch dynamic real-time IPTV sports match coverage directly in this section! Browsing channels or other matches won't disconnect or interrupt your sports stream. Select a match broadcast below or tune in.
               </p>
             </div>
@@ -512,8 +512,8 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
           onClick={() => setActiveTab("live")}
           className={`px-4.5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border ${
             activeTab === "live" 
-              ? "bg-red-650/15 border-red-500 text-red-400 font-extrabold" 
-              : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
+              ? `${theme.id === "bengal-light" ? "bg-red-650 text-white border-transparent" : "bg-red-650/15 border-red-500 text-red-400"} font-extrabold` 
+              : `${theme.id === "bengal-light" ? "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-850" : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"}`
           }`}
         >
           <Circle className="h-2.5 w-2.5 rounded-full bg-red-500 fill-red-500 animate-pulse" />
@@ -524,8 +524,8 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
           onClick={() => setActiveTab("schedule")}
           className={`px-4.5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border ${
             activeTab === "schedule" 
-              ? "bg-red-650/15 border-red-500 text-red-400 font-extrabold" 
-              : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
+              ? `${theme.id === "bengal-light" ? "bg-red-650 text-white border-transparent" : "bg-red-650/15 border-red-500 text-red-400"} font-extrabold` 
+              : `${theme.id === "bengal-light" ? "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-850" : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"}`
           }`}
         >
           <Calendar className="h-4 w-4" />
@@ -536,8 +536,8 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
           onClick={() => setActiveTab("standings")}
           className={`px-4.5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border ${
             activeTab === "standings" 
-              ? "bg-red-650/15 border-red-500 text-red-400 font-extrabold" 
-              : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
+              ? `${theme.id === "bengal-light" ? "bg-red-655 text-white border-transparent" : "bg-red-650/15 border-red-500 text-red-400"} font-extrabold` 
+              : `${theme.id === "bengal-light" ? "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-850" : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"}`
           }`}
         >
           <BarChart2 className="h-4 w-4" />
@@ -548,8 +548,8 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
           onClick={() => setActiveTab("esports")}
           className={`px-4.5 py-2.5 rounded-xl text-xs font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer border ${
             activeTab === "esports" 
-              ? "bg-red-650/15 border-red-500 text-red-400 font-extrabold" 
-              : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"
+              ? `${theme.id === "bengal-light" ? "bg-red-650 text-white border-transparent" : "bg-red-650/15 border-red-500 text-red-400"} font-extrabold` 
+              : `${theme.id === "bengal-light" ? "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-850" : "bg-white/5 border-white/5 hover:border-white/10 text-slate-400 hover:text-white"}`
           }`}
         >
           <Gamepad2 className="h-4 w-4" />
@@ -559,30 +559,46 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
 
       {/* FILTER BUTTONS FOR SPORT TYPE */}
       {activeTab === "live" && (
-        <div className="flex gap-2 mb-6 border-b border-white/5 pb-4">
+        <div className={`flex gap-2 mb-6 border-b ${theme.id === "bengal-light" ? "border-slate-200" : "border-white/5"} pb-4`}>
           <button 
             onClick={() => setFilterSport("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${filterSport === "all" ? "bg-white/10 text-white font-semibold" : "text-slate-450 hover:text-white"}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filterSport === "all" 
+                ? `${theme.id === "bengal-light" ? "bg-red-50 text-red-650 font-semibold" : "bg-white/10 text-white font-semibold"}` 
+                : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800" : "text-slate-450 hover:text-white"}`
+            }`}
           >
             🏆 All Sports
           </button>
           <button 
             onClick={() => setFilterSport("football")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${filterSport === "football" ? "bg-white/10 text-white font-semibold" : "text-slate-450 hover:text-white"}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filterSport === "football" 
+                ? `${theme.id === "bengal-light" ? "bg-red-50 text-red-650 font-semibold" : "bg-white/10 text-white font-semibold"}` 
+                : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800" : "text-slate-450 hover:text-white"}`
+            }`}
           >
             ⚽ Football
           </button>
           {sportsData?.cricketEventActive && (
             <button 
               onClick={() => setFilterSport("cricket")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${filterSport === "cricket" ? "bg-white/10 text-white font-semibold" : "text-slate-450 hover:text-white"}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                filterSport === "cricket" 
+                  ? `${theme.id === "bengal-light" ? "bg-red-50 text-red-650 font-semibold" : "bg-white/10 text-white font-semibold"}` 
+                  : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800" : "text-slate-450 hover:text-white"}`
+              }`}
             >
               🏏 Cricket
             </button>
           )}
           <button 
             onClick={() => setFilterSport("esports")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${filterSport === "esports" ? "bg-white/10 text-white font-semibold" : "text-slate-450 hover:text-white"}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              filterSport === "esports" 
+                ? `${theme.id === "bengal-light" ? "bg-red-50 text-red-650 font-semibold" : "bg-white/10 text-white font-semibold"}` 
+                : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800" : "text-slate-450 hover:text-white"}`
+            }`}
           >
             🎮 Esports
           </button>
@@ -605,14 +621,14 @@ export default function SportsArena({ theme, staticChannels }: SportsArenaProps)
             <div className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {filteredMatches.length === 0 ? (
-                  <div className="col-span-full py-12 text-center bg-[#0c0c0c] border border-white/5 rounded-2xl">
-                    <p className="text-xs font-mono text-slate-400">No matches found matching search filters.</p>
+                  <div className={`col-span-full py-12 text-center ${theme.id === "bengal-light" ? "bg-slate-50 border-slate-200 text-slate-500" : "bg-[#0c0c0c] border-white/5 text-slate-400"} border rounded-2xl`}>
+                    <p className="text-xs font-mono">No matches found matching search filters.</p>
                   </div>
                 ) : (
                   filteredMatches.map((match) => (
                     <div 
                       key={match.id}
-                      className="bg-[#0b0b0b] border border-white/5 rounded-2xl overflow-hidden hover:border-white/15 transition-all shadow-xl flex flex-col justify-between"
+                      className={`${theme.id === "bengal-light" ? "bg-slate-50 border-slate-250 hover:border-slate-350 hover:bg-slate-100/50" : "bg-[#0b0b0b] border-white/5 hover:border-white/15"} border rounded-2xl overflow-hidden transition-all shadow-xl flex flex-col justify-between`}
                     >
                       {/* Match Card Top Metadata header */}
                       <div className="px-5 py-3.5 bg-white/5 border-b border-white/5 flex items-center justify-between">

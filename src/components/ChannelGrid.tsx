@@ -114,7 +114,7 @@ export default function ChannelGrid({
             placeholder="Search channels..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#121212]/35 text-[#f1f1f1] placeholder-slate-500 text-xs sm:text-sm px-10 py-2.5 rounded-xl border border-white/5 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all font-sans"
+            className={`w-full ${theme.id === "bengal-light" ? "bg-slate-100 text-slate-800 placeholder-slate-400 border-slate-200" : "bg-[#121212]/35 text-[#f1f1f1] placeholder-slate-500 border-white/5"} text-xs sm:text-sm px-10 py-2.5 rounded-xl border focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-all font-sans`}
           />
           {searchQuery && (
             <button 
@@ -129,13 +129,13 @@ export default function ChannelGrid({
         {/* View togglers and sync status */}
         <div className="flex flex-wrap items-center justify-between md:justify-end gap-3.5 w-full md:w-auto shrink-0 select-none">
           {/* TWO BETTER VIEW EXPERIENCE TOGGLE SWITCH */}
-          <div className="flex items-center bg-[#090909]/95 p-1 border border-white/5 rounded-xl gap-1 shrink-0">
+          <div className={`flex items-center ${theme.id === "bengal-light" ? "bg-slate-100 border-slate-200" : "bg-[#090909]/95 border-white/5"} p-1 border rounded-xl gap-1 shrink-0`}>
             <button
               onClick={() => toggleViewMode("grid")}
               className={`p-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                 viewMode === "grid"
                   ? `${theme.accentBg} text-white font-bold shadow-md`
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50" : "text-slate-400 hover:text-white hover:bg-white/5"}`
               }`}
               title="Visual Grid Cards"
             >
@@ -147,7 +147,7 @@ export default function ChannelGrid({
               className={`p-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                 viewMode === "list"
                   ? `${theme.accentBg} text-white font-bold shadow-md`
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  : `${theme.id === "bengal-light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50" : "text-slate-400 hover:text-white hover:bg-white/5"}`
               }`}
               title="Compact Feed List"
             >
@@ -159,7 +159,7 @@ export default function ChannelGrid({
           {/* DYNAMIC CHANNEL EDITOR ACCESS POINT */}
           <button
             onClick={onOpenEditor}
-            className="p-2 bg-[#0c0c0c]/98 border border-white/5 hover:border-white/15 text-slate-300 hover:text-white rounded-xl flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer font-bold shadow-md shrink-0"
+            className={`p-2 ${theme.id === "bengal-light" ? "bg-white border-slate-250 text-slate-700 hover:bg-slate-100" : "bg-[#0c0c0c]/98 border-white/5 hover:border-white/15 text-slate-300 hover:text-white"} rounded-xl border flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer font-bold shadow-sm shrink-0`}
             title="Manage & Edit Custom Streams"
           >
             <Sliders className="h-4 w-4 text-red-500 animate-pulse" />
@@ -172,7 +172,7 @@ export default function ChannelGrid({
                 <RefreshCw className="h-3 w-3 animate-spin" /> APIs Synced
               </span>
             )}
-            <span>Found: <strong className="text-white font-extrabold">{filteredChannels.length}</strong></span>
+            <span>Found: <strong className={`${theme.id === "bengal-light" ? "text-slate-900" : "text-white"} font-extrabold`}>{filteredChannels.length}</strong></span>
           </div>
 
           {channels.length > 30 && (
@@ -230,7 +230,7 @@ export default function ChannelGrid({
                     className={`group relative rounded-xl ${theme.bgCard} border transition-all duration-300 flex flex-col h-full cursor-pointer overflow-hidden transform hover:-translate-y-1 ${
                       isSelected
                         ? `ring-2 ${theme.accentRing} border-transparent shadow-[0_10px_20px_rgba(239,68,68,0.2)]`
-                        : `${theme.borderClass} hover:border-white/10 hover:bg-black/10 hover:shadow-xl shadow-black/40`
+                        : `${theme.borderClass} ${theme.id === "bengal-light" ? "hover:border-slate-350 hover:bg-slate-100/60" : "hover:border-white/10 hover:bg-black/10"} hover:shadow-xl`
                     }`}
                   >
                     
@@ -282,7 +282,7 @@ export default function ChannelGrid({
                     <div className="p-3 sm:p-4 flex flex-col gap-2 flex-grow justify-between">
                       
                       <div>
-                        <h3 className="text-xs sm:text-sm font-bold text-slate-100 font-display line-clamp-1 group-hover:text-red-550 transition-colors">
+                        <h3 className={`text-xs sm:text-sm font-bold ${theme.id === "bengal-light" ? "text-slate-800" : "text-slate-100"} font-display line-clamp-1 group-hover:text-red-550 transition-colors`}>
                           {channel.name}
                         </h3>
                         {channel.language && (
@@ -328,8 +328,8 @@ export default function ChannelGrid({
                     onClick={() => onSelectChannel(channel)}
                     className={`group relative rounded-xl ${theme.bgCard} border transition-all duration-200 flex items-center justify-between p-3 cursor-pointer ${
                       isSelected
-                        ? `ring-1 ${theme.accentRing} border-transparent bg-[#111111] shadow-[0_4px_12px_rgba(239,68,68,0.15)]`
-                        : `${theme.borderClass} hover:border-white/10 hover:bg-black/15 shadow-sm`
+                        ? `ring-1 ${theme.accentRing} border-transparent ${theme.id === "bengal-light" ? "bg-slate-100" : "bg-[#111111]"} shadow-[0_4px_12px_rgba(239,68,68,0.15)]`
+                        : `${theme.borderClass} ${theme.id === "bengal-light" ? "hover:border-slate-300 hover:bg-slate-100/65" : "hover:border-white/10 hover:bg-black/15"} shadow-sm`
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0 pr-2">
@@ -347,7 +347,7 @@ export default function ChannelGrid({
 
                       <div className="min-w-0 flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-xs sm:text-sm font-bold text-slate-100 font-display truncate group-hover:text-red-500 transition-colors">
+                          <h3 className={`text-xs sm:text-sm font-bold ${theme.id === "bengal-light" ? "text-slate-800" : "text-slate-100"} font-display truncate group-hover:text-red-500 transition-colors`}>
                             {channel.name}
                           </h3>
                           <span className={`h-1.5 w-1.5 rounded-full bg-red-500 shrink-0 ${isSelected ? "animate-pulse" : "opacity-0 group-hover:opacity-100 transition-opacity"}`}></span>
