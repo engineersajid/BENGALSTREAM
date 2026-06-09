@@ -389,19 +389,45 @@ export default function VideoPlayer({ theme, channel, onPrevChannel, onNextChann
   const [isNativePipActive, setIsNativePipActive] = useState(false);
 
   useEffect(() => {
-    if (typeof document !== "undefined" && document.pictureInPictureEnabled) {
-      setIsPipSupported(true);
+    const video = videoRef.current;
+    if (typeof document !== "undefined") {
+      if (document.pictureInPictureEnabled) {
+        setIsPipSupported(true);
+      } else if (video && (video as any).webkitSupportsPresentationMode && typeof (video as any).webkitSetPresentationMode === "function") {
+        setIsPipSupported(true);
+      }
     }
     
-    const video = videoRef.current;
     if (video) {
+      // Programmatically set properties to bypass React JSX property validations
+      try {
+        (video as any).autoPictureInPicture = true;
+        video.setAttribute("webkit-playsinline", "true");
+      } catch (err) {
+        console.warn("Could not set custom video attributes", err);
+      }
+
       const onEnterPip = () => setIsNativePipActive(true);
       const onLeavePip = () => setIsNativePipActive(false);
       video.addEventListener("enterpictureinpicture", onEnterPip);
       video.addEventListener("leavepictureinpicture", onLeavePip);
+
+      // iOS Safari presentation mode support
+      const onPresentationModeChange = () => {
+        if ((video as any).webkitPresentationMode === "picture-in-picture") {
+          setIsNativePipActive(true);
+        } else {
+          setIsNativePipActive(false);
+        }
+      };
+      video.addEventListener("webkitpresentationmodechanged", onPresentationModeChange);
+
       return () => {
         video.removeEventListener("enterpictureinpicture", onEnterPip);
         video.removeEventListener("leavepictureinpicture", onLeavePip);
+        if (typeof video.removeEventListener === "function") {
+          video.removeEventListener("webkitpresentationmodechanged", onPresentationModeChange);
+        }
       }
     }
   }, [channel]);
@@ -412,7 +438,13 @@ export default function VideoPlayer({ theme, channel, onPrevChannel, onNextChann
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-      } else if (document.pictureInPictureEnabled) {
+      } else if ((video as any).webkitPresentationMode === "picture-in-picture") {
+        // iOS Safari exit presentation mode
+        (video as any).webkitSetPresentationMode("inline");
+      } else if ((video as any).webkitSupportsPresentationMode && typeof (video as any).webkitSetPresentationMode === "function") {
+        // iOS Safari enter presentation mode
+        (video as any).webkitSetPresentationMode("picture-in-picture");
+      } else if (document.pictureInPictureEnabled || video.requestPictureInPicture) {
         await video.requestPictureInPicture();
       }
     } catch (err) {
@@ -717,13 +749,13 @@ export default function VideoPlayer({ theme, channel, onPrevChannel, onNextChann
         className="sticky top-0 lg:relative lg:top-auto z-30 aspect-video w-full sm:rounded-2xl bg-black overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] sm:border border-white/5 group"
       >
         {/* Core HTML5 Video Element */}
-        <video 
+         <video 
           ref={videoRef}
           className="w-full h-full object-contain"
           playsInline
           onClick={handleVideoClick}
           onTimeUpdate={handleTimeUpdate}
-        />
+         />
 
         {/* Beautiful Poster / Photo backplate when not playing */}
         {!isPlaying && channel && !isLoading && !hasError && (
