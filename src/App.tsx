@@ -141,6 +141,29 @@ export default function App() {
       }, 150);
     }
   };
+
+  // Traversal mechanism to next/prev channels sequentially in the shown list
+  const handlePrevChannel = () => {
+    if (!selectedChannel || computedChannels.length === 0) return;
+    const currentIndex = computedChannels.findIndex(c => c.id === selectedChannel.id);
+    if (currentIndex === -1) {
+      setSelectedChannel(computedChannels[computedChannels.length - 1]);
+    } else {
+      const prevIndex = (currentIndex - 1 + computedChannels.length) % computedChannels.length;
+      setSelectedChannel(computedChannels[prevIndex]);
+    }
+  };
+
+  const handleNextChannel = () => {
+    if (!selectedChannel || computedChannels.length === 0) return;
+    const currentIndex = computedChannels.findIndex(c => c.id === selectedChannel.id);
+    if (currentIndex === -1) {
+      setSelectedChannel(computedChannels[0]);
+    } else {
+      const nextIndex = (currentIndex + 1) % computedChannels.length;
+      setSelectedChannel(computedChannels[nextIndex]);
+    }
+  };
   
   // Custom design themes state managers
   const [themeId, setThemeId] = useState(() => {
@@ -339,8 +362,22 @@ export default function App() {
     }
   });
 
+  // Resizable PiP settings
+  const [pipSize, setPipSize] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("bengalstream_pip_size");
+      return saved ? parseInt(saved, 10) : 380;
+    } catch (e) {
+      return 380;
+    }
+  });
+
   const isDraggingRef = useRef(false);
   const dragStartOffsetRef = useRef({ x: 0, y: 0 });
+
+  const isResizingRef = useRef(false);
+  const resizeStartWidthRef = useRef(380);
+  const resizeStartXRef = useRef(0);
 
   const clampPosition = (x: number, y: number, width: number, height: number) => {
     const margin = 12;
@@ -357,14 +394,24 @@ export default function App() {
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return; // Only primary mouse button/touch
     
-    // Do not initiate drag if they clicked on interactive widgets/buttons
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('a') || target.closest('input') || target.closest('select')) {
+    const el = document.getElementById("active-video-player-deck");
+    if (!el) return;
+
+    // Direct to resizer logic if they clicked on the resize grip
+    const isResizeHandle = target.closest(".pip-resize-handle");
+    if (isResizeHandle) {
+      el.setPointerCapture(e.pointerId);
+      isResizingRef.current = true;
+      resizeStartWidthRef.current = pipSize;
+      resizeStartXRef.current = e.clientX;
       return;
     }
 
-    const el = document.getElementById("active-video-player-deck");
-    if (!el) return;
+    // Do not initiate drag if they clicked on interactive widgets/buttons
+    if (target.closest("button") || target.closest("a") || target.closest("input") || target.closest("select")) {
+      return;
+    }
 
     el.setPointerCapture(e.pointerId);
     isDraggingRef.current = true;
@@ -386,6 +433,13 @@ export default function App() {
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isResizingRef.current) {
+      const deltaX = e.clientX - resizeStartXRef.current;
+      const newWidth = Math.max(220, Math.min(800, resizeStartWidthRef.current + deltaX));
+      setPipSize(newWidth);
+      return;
+    }
+
     if (!isDraggingRef.current) return;
 
     const el = document.getElementById("active-video-player-deck");
@@ -402,11 +456,17 @@ export default function App() {
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = document.getElementById("active-video-player-deck");
+    if (el) {
+      el.releasePointerCapture(e.pointerId);
+    }
+
+    if (isResizingRef.current) {
+      isResizingRef.current = false;
+      localStorage.setItem("bengalstream_pip_size", pipSize.toString());
+    }
+
     if (isDraggingRef.current) {
-      const el = document.getElementById("active-video-player-deck");
-      if (el) {
-        el.releasePointerCapture(e.pointerId);
-      }
       isDraggingRef.current = false;
       if (pipPosition) {
         localStorage.setItem("bengalstream_pip_pos", JSON.stringify(pipPosition));
@@ -755,17 +815,19 @@ export default function App() {
                 <section 
                   id="active-video-player-deck"  
                   className={isFloating 
-                    ? `fixed bottom-28 right-4 sm:bottom-32 sm:right-6 md:right-8 w-[320px] sm:w-[380px] max-w-[92vw] z-40 bg-[#0c0c0c]/98 sm:${activeTheme.bgCard} border ${activeTheme.borderClass} rounded-2xl p-3 shadow-2xl shadow-black/100 animate-in fade-in slide-in-from-bottom-6 cursor-grab active:cursor-grabbing`
+                    ? `fixed bottom-28 right-4 sm:bottom-32 sm:right-6 md:right-8 max-w-[95vw] z-40 bg-[#0c0c0c]/98 sm:${activeTheme.bgCard} border ${activeTheme.borderClass} rounded-2xl p-3 shadow-2xl shadow-black/100 animate-in fade-in slide-in-from-bottom-6 cursor-grab active:cursor-grabbing`
                     : `bg-[#080808]/95 sm:${activeTheme.bgCard} border-b sm:border ${activeTheme.borderClass} sm:rounded-2xl p-0 sm:p-5 shadow-2xl shadow-black/95 w-full mx-auto`
                   }
                   style={isFloating && pipPosition ? {
                     position: "fixed",
                     left: `${pipPosition.x}px`,
                     top: `${pipPosition.y}px`,
+                    width: `${pipSize}px`,
                     bottom: "auto",
                     right: "auto",
                     touchAction: "none"
                   } : isFloating ? {
+                    width: `${pipSize}px`,
                     touchAction: "none"
                   } : undefined}
                   onPointerDown={isFloating ? handlePointerDown : undefined}
@@ -787,7 +849,7 @@ export default function App() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] text-slate-500 font-mono hidden sm:inline">Drag to move</span>
+                        <span className="text-[9px] text-slate-500 font-mono hidden sm:inline">Drag or Corner resize</span>
                         <button 
                           onClick={() => setSelectedChannel(null)}
                           className="text-slate-400 hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
@@ -807,7 +869,26 @@ export default function App() {
                     </div>
                   )}
                   
-                  <VideoPlayer theme={activeTheme} channel={selectedChannel} isFloating={isFloating} />
+                  <VideoPlayer 
+                    theme={activeTheme} 
+                    channel={selectedChannel} 
+                    isFloating={isFloating} 
+                    onPrevChannel={handlePrevChannel}
+                    onNextChannel={handleNextChannel}
+                  />
+
+                  {isFloating && (
+                    <div 
+                      className="absolute bottom-1 right-1 p-1 cursor-se-resize z-50 pip-resize-handle" 
+                      title="Drag corner to Resize Player"
+                    >
+                      {/* Diagonal resize lines handle */}
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="text-gray-500 hover:text-red-500 transition-colors">
+                        <line x1="6" y1="18" x2="18" y2="6" />
+                        <line x1="12" y1="18" x2="18" y2="12" />
+                      </svg>
+                    </div>
+                  )}
 
                   {isFloating && (
                     <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between gap-3 px-1 select-none">

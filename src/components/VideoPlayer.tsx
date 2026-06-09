@@ -3,7 +3,7 @@ import Hls from "hls.js";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize, 
   RotateCcw, Sliders, Info, AlertTriangle, Radio, Activity,
-  Tv, Eye, Settings, ChevronDown, ChevronUp
+  Tv, Eye, Settings, ChevronDown, ChevronUp, SkipBack, SkipForward, PictureInPicture
 } from "lucide-react";
 import { Channel, StreamStats } from "../types";
 
@@ -15,7 +15,7 @@ interface VideoPlayerProps {
   isFloating?: boolean;
 }
 
-export default function VideoPlayer({ theme, channel, isFloating = false }: VideoPlayerProps) {
+export default function VideoPlayer({ theme, channel, onPrevChannel, onNextChannel, isFloating = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -383,6 +383,130 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
       video.muted = isMuted;
     }
   }, [volume, isMuted]);
+
+  // Native PiP Support State
+  const [isPipSupported, setIsPipSupported] = useState(false);
+  const [isNativePipActive, setIsNativePipActive] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== "undefined" && document.pictureInPictureEnabled) {
+      setIsPipSupported(true);
+    }
+    
+    const video = videoRef.current;
+    if (video) {
+      const onEnterPip = () => setIsNativePipActive(true);
+      const onLeavePip = () => setIsNativePipActive(false);
+      video.addEventListener("enterpictureinpicture", onEnterPip);
+      video.addEventListener("leavepictureinpicture", onLeavePip);
+      return () => {
+        video.removeEventListener("enterpictureinpicture", onEnterPip);
+        video.removeEventListener("leavepictureinpicture", onLeavePip);
+      }
+    }
+  }, [channel]);
+
+  const toggleNativePiP = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn("Native PiP request failed", err);
+    }
+  };
+
+  // Keyboard shortcuts event listener (YouTube style)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is inside an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" || 
+        target.tagName === "TEXTAREA" || 
+        target.isContentEditable ||
+        target.closest("select") ||
+        target.closest("input") ||
+        target.closest("textarea")
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      // Fullscreen shortcut: 'f' or Ctrl+F
+      if (key === "f" || (e.ctrlKey && key === "f")) {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+
+      // Play/Pause: spacebar or 'k'
+      else if (e.key === " " || key === "k") {
+        e.preventDefault();
+        togglePlay();
+      }
+
+      // Mute/Unmute: 'm'
+      else if (key === "m") {
+        e.preventDefault();
+        toggleMute();
+      }
+
+      // Previous/Next traversal shortcuts: 'p' (previous) / 'n' (next)
+      else if (key === "p" && onPrevChannel) {
+        e.preventDefault();
+        onPrevChannel();
+      }
+      else if (key === "n" && onNextChannel) {
+        e.preventDefault();
+        onNextChannel();
+      }
+
+      // Volume Up: ArrowUp
+      else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setVolume(prev => Math.min(1, Math.round((prev + 0.1) * 10) / 10));
+        setIsMuted(false);
+      }
+
+      // Volume Down: ArrowDown
+      else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setVolume(prev => Math.max(0, Math.round((prev - 0.1) * 10) / 10));
+      }
+
+      // Seek back (ArrowLeft)
+      else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (hasDvrHistory && videoRef.current) {
+          const newOffset = Math.min(Math.max(30, seekableEnd - seekableStart), dvrOffset + 10);
+          setDvrOffset(newOffset);
+          const targetTime = Math.max(seekableStart, seekableEnd - newOffset);
+          videoRef.current.currentTime = targetTime;
+        }
+      }
+
+      // Seek forward (ArrowRight)
+      else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (hasDvrHistory && videoRef.current) {
+          const newOffset = Math.max(0, dvrOffset - 10);
+          setDvrOffset(newOffset);
+          const targetTime = Math.max(seekableStart, seekableEnd - newOffset);
+          videoRef.current.currentTime = targetTime;
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPlaying, isMuted, volume, dvrOffset, hasDvrHistory, seekableStart, seekableEnd, onPrevChannel, onNextChannel]);
 
   // Toggle Play / Pause
   const togglePlay = () => {
@@ -831,6 +955,18 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
                 
                 {/* Left controls */}
                 <div className="flex items-center gap-4">
+                  {/* Skip Back / Prev Channel Option */}
+                  {onPrevChannel && (
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onPrevChannel(); }}
+                      className="p-2 bg-[#121212]/90 hover:bg-[#181818] text-slate-300 hover:text-red-500 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                      title="Previous Channel (Shortcut: P)"
+                    >
+                      <SkipBack className="h-4 w-4 fill-current" />
+                    </button>
+                  )}
+
                   {/* Play / Pause Toggle Button */}
                   <button 
                     onClick={togglePlay}
@@ -838,6 +974,18 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
                   >
                     {isPlaying ? <Pause className="h-5 w-5 fill-white text-white" /> : <Play className="h-5 w-5 fill-white text-white ml-0.5" />}
                   </button>
+
+                  {/* Skip Forward / Next Channel Option */}
+                  {onNextChannel && (
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onNextChannel(); }}
+                      className="p-2 bg-[#121212]/90 hover:bg-[#181818] text-slate-300 hover:text-red-500 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                      title="Next Channel (Shortcut: N)"
+                    >
+                      <SkipForward className="h-4 w-4 fill-current" />
+                    </button>
+                  )}
 
                   {/* Volume Control */}
                   <div className="flex items-center gap-2 group/volume relative">
@@ -902,6 +1050,19 @@ export default function VideoPlayer({ theme, channel, isFloating = false }: Vide
                     <span className={`h-2 w-2 rounded-full ${dvrOffset <= 2 ? "bg-red-500 animate-pulse" : "bg-slate-500"}`}></span>
                     {dvrOffset <= 2 ? "LIVE" : "GO LIVE"}
                   </button>
+                  
+                  {/* Picture in Picture Button */}
+                  {isPipSupported && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleNativePiP(); }}
+                      className={`p-2.5 rounded-lg flex items-center justify-center transition-all cursor-pointer border border-white/5 active:scale-95 ${
+                        isNativePipActive ? "bg-red-600 text-white border-red-500/20" : "bg-[#121212]/90 hover:bg-[#181818] text-slate-300 hover:text-white"
+                      }`}
+                      title={isNativePipActive ? "Close Floating Mini Player" : "Open Floating Mini Player (Keep watching across tabs & windows)"}
+                    >
+                      <PictureInPicture className="h-4 w-4" />
+                    </button>
+                  )}
                   
                   {/* Fullscreen Button */}
                   <button 
