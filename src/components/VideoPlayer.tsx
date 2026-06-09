@@ -432,6 +432,52 @@ export default function VideoPlayer({ theme, channel, onPrevChannel, onNextChann
     }
   }, [channel]);
 
+  // Automatically trigger Picture-in-Picture when tab/window is minimized or tab is switched
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      const video = videoRef.current;
+      if (!video || !isPlaying) return;
+
+      if (document.visibilityState === "hidden") {
+        // Tab / browser window minimized or hidden
+        if (!document.pictureInPictureElement && (video as any).webkitPresentationMode !== "picture-in-picture") {
+          try {
+            if (video.requestPictureInPicture) {
+              await video.requestPictureInPicture();
+            } else if ((video as any).webkitSupportsPresentationMode && typeof (video as any).webkitSetPresentationMode === "function") {
+              (video as any).webkitSetPresentationMode("picture-in-picture");
+            }
+          } catch (err) {
+            console.warn("Auto PiP transition failed on hide:", err);
+          }
+        }
+      }
+    };
+
+    const handlePageHide = async () => {
+      const video = videoRef.current;
+      if (!video || !isPlaying) return;
+      if (!document.pictureInPictureElement && (video as any).webkitPresentationMode !== "picture-in-picture") {
+        try {
+          if (video.requestPictureInPicture) {
+            await video.requestPictureInPicture();
+          } else if ((video as any).webkitSupportsPresentationMode && typeof (video as any).webkitSetPresentationMode === "function") {
+            (video as any).webkitSetPresentationMode("picture-in-picture");
+          }
+        } catch (err) {
+          console.warn("Auto PiP transition failed on pagehide:", err);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [isPlaying]);
+
   const toggleNativePiP = async () => {
     const video = videoRef.current;
     if (!video) return;

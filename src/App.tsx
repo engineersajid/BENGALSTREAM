@@ -516,6 +516,28 @@ export default function App() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Automatically trigger in-app floating player when tab/window is hidden or minimized
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && selectedChannel) {
+        setIsFloating(true);
+      }
+    };
+
+    const handlePageHide = () => {
+      if (selectedChannel) {
+        setIsFloating(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [selectedChannel]);
+
   // Initialize favorites from browser LocalStorage
   useEffect(() => {
     const saved = localStorage.getItem("bengalstream_favorites");
@@ -823,11 +845,13 @@ export default function App() {
                     left: `${pipPosition.x}px`,
                     top: `${pipPosition.y}px`,
                     width: `${pipSize}px`,
+                    maxWidth: "calc(100vw - 32px)",
                     bottom: "auto",
                     right: "auto",
                     touchAction: "none"
                   } : isFloating ? {
                     width: `${pipSize}px`,
+                    maxWidth: "calc(100vw - 32px)",
                     touchAction: "none"
                   } : undefined}
                   onPointerDown={isFloating ? handlePointerDown : undefined}
